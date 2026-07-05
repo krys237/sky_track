@@ -1,0 +1,31 @@
+{
+  "name": "sky-track",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SkyTrack — site vitrine + tunnel d'achat & d'activation pour cartes de tracking (Find Hub / Localiser).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.0",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^0.454.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.35",
+    "sharp": "^0.35.3",
+    "typescript": "^5.5.4"
+  }
+}
