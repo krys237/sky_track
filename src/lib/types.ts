@@ -1,10 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 
-export type PackId = "solo" | "famille" | "business";
+// Les 2 produits réels (cf. TAG_PRODUCTS). Le tunnel de commande et la BD
+// partagent désormais ces identifiants ; plus d'anciens packs solo/famille/business.
+export type PackId = "carte" | "rond";
 
 export interface Pack {
   id: PackId;
   name: string;
+  /** Quantité incluse (1 tracker par option pour l'instant). */
   cards: number;
   price: number;
   tag: string;

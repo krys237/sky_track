@@ -27,13 +27,13 @@ export function Footer() {
             <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 14 }}>La carte qui retrouve vos objets de valeur, propulsée par le réseau Google Find Hub (Android).</p>
           </div>
           <div style={{ display: "flex", gap: 50, flexWrap: "wrap" }}>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <div className="eyebrow" style={{ marginBottom: 14 }}>Produit</div>
               {produit.map(([k, l]) => (
                 <div key={l} className="navlink" style={{ padding: "6px 0", fontSize: 14 }} onClick={() => go(k)}>{l}</div>
               ))}
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
               <div className="eyebrow" style={{ marginBottom: 14 }}>Aide</div>
               {aide.map(([k, l]) => (
                 <div key={l} className="navlink" style={{ padding: "6px 0", fontSize: 14 }} onClick={() => go(k)}>{l}</div>

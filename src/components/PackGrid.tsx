@@ -27,8 +27,8 @@ export function PackGrid({
         return (
           <div key={p.id} className="card card-interactive" style={{ padding: 26, position: "relative", borderColor: p.best || active ? "rgba(16,185,129,.5)" : undefined }}>
             {p.best && <span className="chip" style={{ position: "absolute", top: -13, left: 22, background: "var(--amber)", color: "#231404", border: 0, fontWeight: 700, fontSize: 12 }}><Star size={12} /> {p.tag}</span>}
-            <h3 className="font-display" style={{ fontSize: 22, fontWeight: 700, margin: "6px 0 4px" }}>{p.name}</h3>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 16 }}>{p.cards} carte{p.cards > 1 ? "s" : ""} SkyTrack</div>
+            <h3 className="font-display" style={{ fontSize: 22, fontWeight: 700, margin: "6px 0 4px" }}>SkyTrack {p.name}</h3>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 16 }}>Tracker connecté</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
               <span className="font-display" style={{ fontSize: 30, fontWeight: 700 }}>{p.price.toLocaleString("fr-FR").replace(/ /g, " ")}</span>
               <span className="muted" style={{ fontSize: 14 }}>FCFA</span>
@@ -45,7 +45,7 @@ export function PackGrid({
               ))}
             </div>
             <Btn variant={p.best ? "primary" : "sig"} onClick={() => onChoose(p)} style={{ width: "100%" }}>
-              Choisir ce pack <ChevronRight size={16} />
+              Choisir ce produit <ChevronRight size={16} />
             </Btn>
           </div>
         );

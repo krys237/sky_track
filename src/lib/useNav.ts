@@ -15,7 +15,21 @@ export function useNav() {
 
   const go = useCallback(
     (page: PageKey) => {
-      router.push(PAGE_TO_PATH[page]);
+      const path = PAGE_TO_PATH[page];
+      // Cibles « ancre » (/#how, /#products) → scroll doux si on est déjà sur la
+      // home (l'App Router ne scrolle pas de façon fiable sur un push same-page),
+      // sinon route vers la home avec le hash.
+      if (path.startsWith("/#")) {
+        const id = path.slice(2);
+        if (window.location.pathname === "/") {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          window.history.replaceState(null, "", path);
+        } else {
+          router.push(path);
+        }
+        return;
+      }
+      router.push(path);
     },
     [router],
   );

@@ -21,7 +21,7 @@ export function StepConfirm({ flow, next }: { flow: Flow; next: () => void }) {
           <span className="muted">N° de commande</span><span className="font-mono sig">{flow.orderRef}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
-          <span className="muted">Pack</span><span>{pack.name} · {pack.cards} carte{pack.cards > 1 ? "s" : ""}</span>
+          <span className="muted">Produit</span><span>SkyTrack {pack.name} · {pack.cards} unité{pack.cards > 1 ? "s" : ""}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
           <span className="muted">Montant</span><span style={{ fontWeight: 600 }}>{fcfa(pack.price)}</span>

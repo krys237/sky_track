@@ -11,11 +11,22 @@ import { InteractiveFolderGallery } from "@/components/InteractiveFolderGallery"
 import { PackOptions } from "@/components/PackOptions";
 import { TagModal } from "@/components/TagModal";
 import { PrincipleRoad } from "@/components/PrincipleRoad";
+import { HeroBackground } from "@/components/HeroBackground";
 import { BENEFITS, TAG_PRODUCTS } from "@/lib/content";
 import type { TagProduct } from "@/lib/types";
 import { useNav } from "@/lib/useNav";
 
 const CTA_LABEL = "Commander ma carte";
+
+// Moyens de paiement affichés dans la section finale (logos → public/payments).
+// Chaque carte reprend le modèle « model-pret a ne plus rien perdre » : logo d'un
+// côté, texte de l'autre (alternance gauche/droite via la classe .rev).
+const PAYMENTS: { id: string; name: string; img: string; desc: string; tag: string }[] = [
+  { id: "mtn", name: "MTN Mobile Money", img: "/payments/mtn-mobile-money.jpg", desc: "Payez depuis votre téléphone MTN, sans compte bancaire.", tag: "Sans banque" },
+  { id: "orange", name: "Orange Money", img: "/payments/orange-money.png", desc: "Réglez directement avec votre solde Orange Money.", tag: "Instantané" },
+  { id: "card", name: "Visa / Mastercard", img: "/payments/visa-mastercard.webp", desc: "Carte bancaire internationale, débit sécurisé.", tag: "Paiement sécurisé" },
+  { id: "bank", name: "Virement bancaire", img: "/payments/bank-transfer.jpg", desc: "Virement depuis votre banque, pratique pour les packs.", tag: "Traçable" },
+];
 
 // Stats de confiance affichées en bas de la section « À quoi ça sert » (icône · valeur forte · libellé)
 const USAGE_STATS: [LucideIcon, string, string][] = [
@@ -34,7 +45,7 @@ const USAGE_ACCENTS = [
 ];
 
 // Confidentialité — garanties cochées (formulées à partir des TRUTHS réelles ; la liste
-// complète et détaillée vit sur /comment-ca-marche). On n'invente aucune promesse.
+// complète et détaillée vit dans la section « Comment ça marche »). On n'invente aucune promesse.
 const PRIVACY_CHECKS = [
   "Chiffrement de bout en bout",
   "Ni Google ni SkyTrack n'y accèdent",
@@ -48,15 +59,28 @@ export default function HomePage() {
   const tagRond = TAG_PRODUCTS.find((t) => t.id === "rond")!;
   const tagCarte = TAG_PRODUCTS.find((t) => t.id === "carte")!;
 
+  // Arrivée depuis une autre page via /#how ou /#products : on cale sur la section
+  // une fois le contenu monté (les sections « reveal » peuvent décaler la hauteur).
+  React.useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="z">
-      {/* 01 — HERO (disposition conservée : texte gauche / produit droite) */}
-      <div className="wrap" style={{ paddingTop: 46, paddingBottom: 40 }}>
-        <div className="stack-sm" style={{ display: "flex", gap: 40, alignItems: "center" }}>
+      {/* 01 — HERO (disposition conservée : texte gauche / produit droite)
+          Fond radar/ondes animé (thème géolocalisation) posé derrière le contenu. */}
+      <div className="wrap" style={{ position: "relative", overflow: "hidden", paddingTop: 46, paddingBottom: 40 }}>
+        <HeroBackground />
+        <div className="stack-sm" style={{ position: "relative", zIndex: 1, display: "flex", gap: 40, alignItems: "center" }}>
           <div style={{ flex: "1 1 480px" }} className="reveal">
-            <div className="chip" style={{ marginBottom: 22 }}>
+            {/* <div className="chip" style={{ marginBottom: 22 }}>
               <span className="pulse-dot" /> Réseau Find Hub de Google · +1 milliard d&apos;appareils
-            </div>
+            </div> */}
             <h1 className="font-display" style={{ fontSize: "clamp(34px,6.4vw,60px)", fontWeight: 800, lineHeight: 1.03, letterSpacing: "-.03em", margin: 0 }}>
               Ne perdez plus jamais<br /><span className="sig">ce qui compte.</span>
             </h1>
@@ -189,29 +213,45 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 04 — COMMENT ÇA MARCHE (route sinueuse en perspective, réf. model-principe) */}
-      <div className="wrap" style={{ paddingTop: 78, paddingBottom: 20 }}>
+      {/* 04 — COMMENT ÇA MARCHE (route sinueuse en perspective, réf. model-principe).
+          id="how" : cible d'ancre de la navbar « Comment ça marche ». */}
+      <div id="how" className="wrap" style={{ scrollMarginTop: 96, paddingTop: 78, paddingBottom: 20 }}>
         <SectionHead center eyebrow="Le principe" title="Comment votre objet se fait retrouver" sub="Cinq temps, et une multitude de téléphones qui travaillent pour vous." />
         <PrincipleRoad />
       </div>
 
-      {/* 05 — NOS PACKS (2 options, une par produit — données uniquement, cf JOURNAL.md) */}
-      <div className="wrap" style={{ paddingTop: 78, paddingBottom: 20 }}>
+      {/* 05 — NOS PACKS (2 options, une par produit — données uniquement, cf JOURNAL.md).
+          id="products" : cible d'ancre de la navbar « Produits ». */}
+      <div id="products" className="wrap" style={{ scrollMarginTop: 96, paddingTop: 78, paddingBottom: 20 }}>
         <SectionHead center eyebrow="Nos produits" title="Choisissez votre protection" />
-        <PackOptions onOrder={() => order()} />
+        <PackOptions onOrder={(id) => order(id)} />
       </div>
 
-      {/* 06 — CTA FINAL */}
-      <div className="wrap" style={{ padding: "70px 20px" }}>
-        <div className="card" style={{ padding: "44px 28px", textAlign: "center", background: "linear-gradient(120deg,rgba(59,130,246,.1),rgba(245,158,11,.08))", border: "1px solid rgba(59,130,246,.22)", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -30, right: -20, width: 130, opacity: .5, transform: "rotate(12deg)", pointerEvents: "none" }}>
-            <TransparentImage src="/tag-rond.png" alt="" style={{ width: "100%", height: "auto" }} />
-          </div>
-          <div style={{ position: "relative" }}>
-            <h2 className="font-display" style={{ fontSize: "clamp(24px,4vw,34px)", fontWeight: 700, margin: "0 0 12px", letterSpacing: "-.02em" }}>Prêt à ne plus rien perdre ?</h2>
-            <p className="muted" style={{ fontSize: 17, margin: "0 auto 26px", maxWidth: 460 }}>Commandez, payez par Mobile Money ou carte, et activez votre carte en quelques minutes.</p>
-            <Btn variant="primary" onClick={() => order()}>{CTA_LABEL} <ArrowRight size={18} /></Btn>
-          </div>
+      {/* 06 — CTA FINAL « Prêt à ne plus rien perdre » (modèle 2×2 : logos de paiement
+          à la place des images, texte de réassurance, bouton de commande en bas) */}
+      <div className="wrap" style={{ paddingTop: 78, paddingBottom: 24 }}>
+        <SectionHead
+          center
+          eyebrow="Paiement facile"
+          title="Prêt à ne plus rien perdre ?"
+          sub="Commandez en quelques minutes et payez comme ça vous arrange — Mobile Money, carte ou virement."
+        />
+        <div className="pay-grid">
+          {PAYMENTS.map((p, i) => (
+            <div key={p.id} className={`pay-card reveal${i % 2 ? " rev" : ""}`}>
+              <div className="pay-logo">
+                <img src={p.img} alt={p.name} loading="lazy" />
+              </div>
+              <div className="pay-body">
+                <h3 className="font-display">{p.name}</h3>
+                <p>{p.desc}</p>
+                <span className="pay-tag"><Check size={13} strokeWidth={3} /> {p.tag}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 38 }}>
+          <Btn variant="primary" onClick={() => order()}>{CTA_LABEL} <ArrowRight size={18} /></Btn>
         </div>
       </div>
 
@@ -219,7 +259,7 @@ export default function HomePage() {
       <TagModal
         product={openTag}
         onClose={() => setOpenTag(null)}
-        onOrder={() => { setOpenTag(null); order(); }}
+        onOrder={() => { const id = openTag?.id; setOpenTag(null); order(id); }}
       />
     </div>
   );

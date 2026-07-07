@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Mail, MessageCircle, Lock, ChevronLeft, ArrowRight } from "lucide-react";
 import { Btn } from "@/components/ui";
+import { PhoneField } from "@/components/PhoneField";
 import { createClient } from "@/lib/supabase/client";
 import { profileFromMetadata, profileToMetadata, profileHasData } from "@/lib/profile";
 import type { StepProps } from "./shared";
@@ -89,7 +90,11 @@ export function StepAccount({ flow, setFlow, next, back }: StepProps) {
         </div>
         <div>
           <label className="fld">{flow.contactType === "email" ? "Adresse email" : "Numéro WhatsApp"}</label>
-          <input value={flow.contact} onChange={set("contact")} placeholder={flow.contactType === "email" ? "vous@exemple.com" : "+237 6 XX XX XX XX"} inputMode={flow.contactType === "email" ? "email" : "tel"} />
+          {flow.contactType === "email" ? (
+            <input value={flow.contact} onChange={set("contact")} placeholder="vous@exemple.com" inputMode="email" />
+          ) : (
+            <PhoneField value={flow.contact} onChange={(v) => setFlow((f) => ({ ...f, contact: v }))} placeholder="6 XX XX XX XX" />
+          )}
           {err.contact && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.contact}</div>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

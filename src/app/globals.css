@@ -73,6 +73,28 @@ input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(3
 input::placeholder{color:var(--muted2)}
 label.fld{display:block;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:500}
 
+/* phone field — sélecteur d'indicatif pays + numéro */
+.phone-field{display:flex;align-items:stretch;position:relative;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:11px;
+  transition:border .15s ease,box-shadow .15s ease}
+.phone-field:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.16)}
+.phone-field>input{border:0!important;background:transparent;box-shadow:none!important;
+  border-radius:0 11px 11px 0;flex:1;min-width:0}
+.phone-field-btn{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;
+  padding:0 11px 0 13px;font-size:15px;color:var(--text);white-space:nowrap;
+  border-right:1px solid var(--line)}
+.phone-field-flag{font-size:17px;line-height:1}
+.phone-cc-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:290px;max-width:88vw;
+  max-height:288px;overflow-y:auto;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;box-shadow:0 22px 52px -20px rgba(16,42,73,.34);padding:8px}
+.phone-cc-search{display:flex;align-items:center;gap:8px;padding:2px 6px 8px}
+.phone-cc-search input{padding:9px 10px;border-radius:9px;font-size:14px}
+.phone-cc-opt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14px;color:var(--text)}
+.phone-cc-opt:hover,.phone-cc-opt.on{background:var(--bg-alt)}
+.phone-cc-dial{margin-left:auto;color:var(--muted);font-size:13px}
+.phone-cc-empty{padding:12px 10px;font-size:13.5px;color:var(--muted)}
+
 a.reset,button.reset{all:unset}
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:8px}
 
@@ -383,7 +405,7 @@ a.reset,button.reset{all:unset}
 }
 
 /* --- « LE PRINCIPE » : route sinueuse en perspective (réf. model-principe) --- */
-.principle-road{position:relative;width:100%;aspect-ratio:1000/520;container-type:inline-size;margin-top:6px}
+.principle-road{position:relative;width:100%;aspect-ratio:1000/560;container-type:inline-size;margin-top:34px}
 .principle-svg{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
 .pr-marker{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;
   align-items:center;width:0}
@@ -393,12 +415,11 @@ a.reset,button.reset{all:unset}
 .pr-dot::before{content:'';position:absolute;width:60%;height:60%;border-radius:50%;background:#fff;
   box-shadow:inset 0 1px 2px rgba(16,42,73,.25)}
 .pr-num{position:relative;z-index:1;font-weight:800;color:#0E1E33;letter-spacing:-.02em;line-height:1}
-.pr-stem{flex:0 0 auto;width:0.6cqw;min-width:3px;height:4cqw;min-height:20px;border-radius:0 0 2px 2px;margin-top:-1px}
-.pr-label{flex:0 0 auto;width:max-content;max-width:156px;margin-bottom:2.2cqw;padding:0 2px;text-align:left}
-.pr-side-right  .pr-label{transform:translateX(-72%)}
-.pr-side-center .pr-label{transform:translateX(-62%)}
-.pr-side-left   .pr-label{transform:translateX(-52%)}
-.pr-side-front  .pr-label{transform:translateX(-26%)}
+.pr-stem{flex:0 0 auto;width:0.55cqw;min-width:3px;min-height:16px;border-radius:0 0 2px 2px;margin-top:-1px}
+/* Ombre portée au pied de l'épingle, posée sur la route */
+.pr-base{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);z-index:-1;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(14,30,51,.34),rgba(14,30,51,0) 78%);filter:blur(1.5px)}
+.pr-label{flex:0 0 auto;width:max-content;max-width:150px;margin-bottom:2.2cqw;padding:0 2px;text-align:left}
 .pr-label-title{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;
   font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.01em;line-height:1.2;margin:0}
 .pr-label-title svg{flex:0 0 auto}
@@ -409,7 +430,7 @@ a.reset,button.reset{all:unset}
 .pr-row{display:flex;gap:16px;align-items:flex-start;padding-bottom:26px;position:relative}
 .pr-row:last-child{padding-bottom:0}
 .pr-row::before{content:'';position:absolute;left:27px;top:58px;bottom:-2px;width:3px;
-  background:linear-gradient(var(--primary),var(--signal));border-radius:2px;opacity:.45}
+  background:linear-gradient(var(--signal-bright),var(--signal));border-radius:2px;opacity:.5}
 .pr-row:last-child::before{display:none}
 .pr-dot-sm{width:56px;height:56px}
 .pr-dot-sm .pr-num{font-size:18px}
@@ -422,3 +443,93 @@ a.reset,button.reset{all:unset}
 }
 
 .reveal{animation:fadeUp .5s ease both}
+
+/* ------- Moyens de paiement (section « Prêt à ne plus rien perdre », modèle 2×2) ------- */
+.pay-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:8px}
+.pay-card{display:flex;align-items:center;gap:20px;background:var(--card);
+  border:1px solid var(--line);border-radius:22px 22px 22px 0px;padding:18px 20px;
+  box-shadow:0 12px 34px -20px rgba(16,42,73,.32);
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.pay-card:hover{transform:translateY(-3px);border-color:var(--line-strong);
+  box-shadow:0 20px 44px -20px rgba(16,42,73,.4)}
+.pay-card.rev{flex-direction:row-reverse}
+/* Tuile logo (à la place de l'image du modèle) */
+.pay-logo{flex:0 0 132px;height:112px;border-radius:16px;background:#FFFFFF;
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  padding:12px;overflow:hidden}
+.pay-logo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.pay-body{min-width:0}
+.pay-body h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:17.5px;font-weight:700;
+  letter-spacing:-.01em;margin:0 0 6px;color:var(--text)}
+.pay-body p{font-size:14px;line-height:1.55;color:var(--muted);margin:0 0 12px}
+.pay-tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+  color:var(--signal);background:rgba(5,150,105,.10);padding:6px 11px;border-radius:999px}
+.pay-tag svg{flex:0 0 auto}
+@media (max-width:760px){
+  .pay-grid{grid-template-columns:1fr;gap:16px}
+  .pay-card,.pay-card.rev{flex-direction:column;text-align:center;align-items:center;gap:16px}
+  .pay-logo{flex-basis:auto;width:150px}
+}
+
+/* ------- Page Contact (bandeau + carte chevauchante + map) -------
+   Reprise du modèle : bandeau sombre (nav flottante par-dessus) → grande carte
+   blanche en chevauchement, 2 colonnes (coordonnées | formulaire) → carte Maps. */
+.contact-page{position:relative}
+/* Bandeau : remonte derrière la nav sticky translucide, texture « carte » sombre */
+.contact-hero{position:relative;margin-top:-92px;padding:128px 20px 150px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(10,20,38,.82),rgba(14,30,51,.92)),url(/map-bg.jpg) center/cover no-repeat;}
+.contact-hero::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(680px 340px at 50% -8%,rgba(37,99,235,.35),transparent 60%),
+             radial-gradient(520px 320px at 82% 118%,rgba(16,185,129,.22),transparent 60%);}
+.contact-hero-inner{position:relative;z-index:1;max-width:640px;margin:0 auto;text-align:center}
+.contact-hero h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:#fff;
+  font-size:clamp(32px,6vw,52px);letter-spacing:-.03em;line-height:1.05;margin:0}
+.contact-hero p{color:rgba(255,255,255,.84);font-size:clamp(15px,2.4vw,18px);
+  line-height:1.6;margin:16px auto 0;max-width:520px}
+
+/* Carte chevauchante */
+.contact-shell{position:relative;z-index:2;margin-top:-96px}
+.contact-card{display:grid;grid-template-columns:0.82fr 1.18fr;background:var(--card);
+  border:1px solid var(--line);border-radius:24px 24px 24px 0;overflow:hidden;
+  box-shadow:0 2px 6px rgba(16,42,73,.06),0 44px 84px -44px rgba(16,42,73,.42)}
+.contact-card-left{padding:38px 34px;border-right:1px solid var(--line)}
+.contact-card-right{padding:38px 34px}
+.contact-card h2{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
+  font-size:clamp(21px,2.8vw,29px);letter-spacing:-.02em;margin:0 0 12px;color:var(--text)}
+.contact-card-left>p{font-size:14.5px;line-height:1.6;color:var(--muted);margin:0 0 26px;max-width:34ch}
+
+.contact-info{display:flex;flex-direction:column;gap:20px}
+.contact-info-item{display:flex;gap:15px;align-items:flex-start}
+.contact-info-ic{flex:0 0 auto;width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(150deg,var(--primary-bright),var(--primary-dim));
+  box-shadow:0 12px 24px -12px rgba(37,99,235,.65)}
+.contact-info-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15.5px;color:var(--text)}
+.contact-info-line{font-size:13.5px;line-height:1.5;color:var(--muted);margin-top:2px;display:block}
+a.contact-info-line{text-decoration:none} a.contact-info-line:hover{color:var(--primary)}
+
+.contact-follow{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14.5px;color:var(--text);margin:30px 0 14px}
+.contact-social{display:flex;gap:10px}
+.contact-social a{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  color:var(--primary);background:rgba(37,99,235,.10);
+  transition:background .16s ease,color .16s ease,transform .16s ease}
+.contact-social a:hover{background:var(--primary);color:#fff;transform:translateY(-2px)}
+
+/* Formulaire (colonne droite) */
+.contact-form-grid{display:grid;gap:16px}
+.contact-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.contact-submit{width:100%}
+
+/* Carte Google Maps pleine largeur */
+.contact-map{margin-top:56px;line-height:0}
+.contact-map iframe{width:100%;height:420px;border:0;display:block}
+
+@media (max-width:860px){
+  .contact-card{grid-template-columns:1fr}
+  .contact-card-left{border-right:0;border-bottom:1px solid var(--line)}
+}
+@media (max-width:520px){
+  .contact-hero{padding:120px 18px 130px}
+  .contact-form-row{grid-template-columns:1fr}
+  .contact-map iframe{height:320px}
+}

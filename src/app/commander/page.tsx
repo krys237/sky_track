@@ -20,9 +20,9 @@ function Onboarding() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Pack pré-sélectionné via l'URL (?pack=famille) → on démarre à l'étape « Compte ».
+  // Produit pré-sélectionné via l'URL (?pack=carte) → on démarre à l'étape « Compte ».
   const presetPack = searchParams.get("pack");
-  const initialPack: PackId = isPackId(presetPack) ? presetPack : "solo";
+  const initialPack: PackId = isPackId(presetPack) ? presetPack : "carte";
   const initialStep = useMemo(() => (isPackId(presetPack) ? 1 : 0), [presetPack]);
 
   const [step, setStep] = useState(initialStep);

@@ -1,26 +1,17 @@
 import {
-  Wallet, FileText, Briefcase, Users, Radio, Signal, MapPin, Volume2, Share2,
+  WalletCards, ScrollText, Luggage, HeartHandshake, Radio, Signal, MapPin, Volume2, Share2,
   Lock, Shield, Nfc, Battery, Droplets, Ruler, Smartphone, CreditCard,
 } from "lucide-react";
 import type { Pack, IconItem, Step, FaqItem, TagProduct } from "./types";
-
-export const PACKS: Pack[] = [
-  { id: "solo", name: "Solo", cards: 1, price: 19900, tag: "Le plus populaire",
-    desc: "Pour ne plus jamais perdre votre portefeuille et vos papiers.", best: true },
-  { id: "famille", name: "Famille", cards: 3, price: 49900, tag: "Économisez 9 700 F",
-    desc: "Protégez portefeuille, sac et bagage de tout le foyer.", best: false },
-  { id: "business", name: "Business", cards: 5, price: 79900, tag: "Meilleur prix / carte",
-    desc: "Sacoches, matériel, sac de caisse — gardez tout à l'œil.", best: false },
-];
 
 export const fcfa = (n: number): string =>
   n.toLocaleString("fr-FR").replace(/ /g, " ") + " FCFA";
 
 export const BENEFITS: IconItem[] = [
-  { icon: Wallet, t: "Portefeuille & CNI", d: "Glissez la carte entre vos cartes bancaires. Retrouvez votre portefeuille en un instant." },
-  { icon: FileText, t: "Passeport & documents", d: "Dans la pochette de voyage, elle veille sur vos papiers les plus précieux." },
-  { icon: Briefcase, t: "Sac, sacoche & bagage", d: "À l'aéroport, en taxi, au bureau — sachez toujours où est votre sac." },
-  { icon: Users, t: "Partage en famille", d: "Partagez la localisation d'un objet avec vos proches, révocable à tout moment." },
+  { icon: WalletCards, t: "Portefeuille & CNI", d: "Glissez la carte entre vos cartes bancaires. Retrouvez votre portefeuille en un instant." },
+  { icon: ScrollText, t: "Passeport & documents", d: "Dans la pochette de voyage, elle veille sur vos papiers les plus précieux." },
+  { icon: Luggage, t: "Sac, sacoche & bagage", d: "À l'aéroport, en taxi, au bureau — sachez toujours où est votre sac." },
+  { icon: HeartHandshake, t: "Partage en famille", d: "Partagez la localisation d'un objet avec vos proches, révocable à tout moment." },
 ];
 
 // Fiches produit ouvertes dans la modale depuis la section « À quoi ça sert ».
@@ -74,12 +65,30 @@ export const TAG_PRODUCTS: TagProduct[] = [
 ];
 
 // Options d'achat de la page d'accueil = 1 par produit (Carte / Tag rond).
-// PRIX = PLACEHOLDER à confirmer. Le modèle de commande (PackId) et la BD restent
-// inchangés : « Commander » entre dans le tunnel existant. Voir JOURNAL.md.
+// PRIX confirmés : Carte (rectangle) 14 900 F · Tag rond 9 900 F. Le modèle de
+// commande (PackId) et la BD restent inchangés : « Commander » entre dans le
+// tunnel existant. Voir JOURNAL.md.
 export const PACK_OPTIONS: { productId: TagProduct["id"]; price: number; best?: boolean }[] = [
-  { productId: "carte", price: 19900, best: true },
-  { productId: "rond", price: 14900 },
+  { productId: "carte", price: 14900, best: true },
+  { productId: "rond", price: 9900 },
 ];
+
+// Le tunnel de commande vend exactement les mêmes 2 produits que la page
+// d'accueil. PACKS en est dérivé (PACK_OPTIONS + TAG_PRODUCTS) : une seule
+// source de vérité pour le prix et le libellé. `order(id)` pré-sélectionne le
+// produit choisi et le tunnel démarre alors à l'étape « Compte ».
+export const PACKS: Pack[] = PACK_OPTIONS.map((opt) => {
+  const p = TAG_PRODUCTS.find((t) => t.id === opt.productId)!;
+  return {
+    id: opt.productId,
+    name: p.name,
+    cards: 1,
+    price: opt.price,
+    tag: opt.best ? "Le plus populaire" : p.usage,
+    desc: p.tagline,
+    best: !!opt.best,
+  };
+});
 
 export const STEPS_FUNC: Step[] = [
   { n: "01", icon: Radio, t: "La carte émet un signal", d: "Un signal Bluetooth basse consommation, discret et économe en batterie, se diffuse en continu autour de la carte." },

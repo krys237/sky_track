@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  Loader, Smartphone, CreditCard, X, Shield, ChevronLeft, ArrowRight,
+  Loader, X, Shield, ChevronLeft, ArrowRight,
 } from "lucide-react";
 import { Btn } from "@/components/ui";
+import { PhoneField } from "@/components/PhoneField";
 import { Summary } from "./Summary";
 import { PACKS, fcfa } from "@/lib/content";
 import {
@@ -26,10 +27,10 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
   const [momoNum, setMomoNum] = useState("");
   const [card, setCard] = useState({ num: "", exp: "", cvv: "", name: "" });
 
-  const methods: { id: PayMethod; label: string; sub: string; color: string }[] = [
-    { id: "momo", label: "MTN MoMo", sub: "Mobile Money", color: "var(--mtn)" },
-    { id: "om", label: "Orange Money", sub: "Mobile Money", color: "var(--orange)" },
-    { id: "visa", label: "Carte Visa / Mastercard", sub: "Paiement par carte", color: "var(--signal)" },
+  const methods: { id: PayMethod; label: string; sub: string; img: string }[] = [
+    { id: "momo", label: "MTN MoMo", sub: "Mobile Money", img: "/payments/mtn-mobile-money.jpg" },
+    { id: "om", label: "Orange Money", sub: "Mobile Money", img: "/payments/orange-money.png" },
+    { id: "visa", label: "Carte Visa / Mastercard", sub: "Paiement par carte", img: "/payments/visa-mastercard.webp" },
   ];
 
   const canPay = () => {
@@ -130,12 +131,13 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
                 {methods.map((m) => (
                   <div key={m.id} className={`rowsel ${method === m.id ? "sel" : ""}`} onClick={() => { setMethod(m.id); setPhase("form"); }}>
                     <div className={`radio ${method === m.id ? "sel" : ""}`} />
-                    <span style={{ width: 12, height: 12, borderRadius: "50%", background: m.color, flex: "0 0 auto" }} />
+                    <span style={{ width: 48, height: 32, borderRadius: 8, background: "#fff", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", padding: 4, flex: "0 0 auto", overflow: "hidden" }}>
+                      <img src={m.img} alt={m.label} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
+                    </span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 15 }}>{m.label}</div>
                       <div className="muted" style={{ fontSize: 12.5 }}>{m.sub}</div>
                     </div>
-                    {m.id === "visa" ? <CreditCard size={18} className="muted" /> : <Smartphone size={18} className="muted" />}
                   </div>
                 ))}
               </div>
@@ -157,7 +159,7 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
                 ) : (
                   <div>
                     <label className="fld">Numéro {method === "momo" ? "MTN MoMo" : "Orange Money"}</label>
-                    <input value={momoNum} onChange={(e) => setMomoNum(e.target.value)} placeholder={method === "momo" ? "+237 6 7X XX XX XX" : "+237 6 9X XX XX XX"} inputMode="tel" />
+                    <PhoneField value={momoNum} onChange={setMomoNum} placeholder={method === "momo" ? "6 7X XX XX XX" : "6 9X XX XX XX"} />
                     <p className="muted2" style={{ fontSize: 12.5, marginTop: 10 }}>Vous recevrez une demande de paiement à valider sur votre téléphone.</p>
                   </div>
                 )}

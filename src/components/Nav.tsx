@@ -14,7 +14,7 @@ const LABEL = Object.fromEntries(NAV_ITEMS) as Record<PageKey, string>;
 // Liens de premier niveau + regroupement « Aide » (FAQ / Support) dans un menu déroulant,
 // à l'image du « Info ⌄ » du modèle — ça allège la capsule.
 const PRIMARY: PageKey[] = ["home", "how", "products"];
-const AIDE: PageKey[] = ["faq", "support"];
+const AIDE: PageKey[] = ["faq", "support", "contact"];
 
 export function Nav() {
   const [open, setOpen] = useState(false);

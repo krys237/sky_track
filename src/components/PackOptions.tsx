@@ -3,13 +3,14 @@
 import React from "react";
 import { Star, Check, Minus, Plus, ArrowRight } from "lucide-react";
 import { PACK_OPTIONS, TAG_PRODUCTS, fcfa } from "@/lib/content";
+import type { PackId } from "@/lib/types";
 import { Btn } from "./ui";
 import { TransparentImage } from "./ui";
 
 const MIN_QTY = 1;
 const MAX_QTY = 5;
 
-export function PackOptions({ onOrder }: { onOrder: () => void }) {
+export function PackOptions({ onOrder }: { onOrder: (id: PackId) => void }) {
   // Quantité par produit — présentielle pour l'instant (non transmise à la commande, cf JOURNAL.md)
   const [qty, setQty] = React.useState<Record<string, number>>({ carte: 1, rond: 1 });
   const step = (id: string, d: number) =>
@@ -64,7 +65,7 @@ export function PackOptions({ onOrder }: { onOrder: () => void }) {
             </div>
             <div className="muted2" style={{ fontSize: 11.5, marginBottom: 16 }}>Tarif indicatif · {fcfa(opt.price)} l&apos;unité</div>
 
-            <Btn variant={opt.best ? "primary" : "sig"} onClick={onOrder} style={{ width: "100%" }}>
+            <Btn variant={opt.best ? "primary" : "sig"} onClick={() => onOrder(opt.productId)} style={{ width: "100%" }}>
               Commander <ArrowRight size={16} />
             </Btn>
           </div>

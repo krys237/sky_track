@@ -1,14 +1,17 @@
 import type { PackId } from "./types";
 
 /** Clés logiques de page (héritées du prototype) → chemins réels Next. */
-export type PageKey = "home" | "how" | "products" | "faq" | "support";
+export type PageKey = "home" | "how" | "products" | "faq" | "support" | "contact";
 
 export const PAGE_TO_PATH: Record<PageKey, string> = {
   home: "/",
-  how: "/comment-ca-marche",
-  products: "/produits",
+  // « how » et « products » ne sont plus des pages autonomes : ce sont des ancres
+  // vers les sections correspondantes de la home (voir Nav → goSection).
+  how: "/#how",
+  products: "/#products",
   faq: "/faq",
   support: "/support",
+  contact: "/contact",
 };
 
 export const NAV_ITEMS: [PageKey, string][] = [
@@ -17,15 +20,16 @@ export const NAV_ITEMS: [PageKey, string][] = [
   ["products", "Produits"],
   ["faq", "FAQ"],
   ["support", "Support"],
+  ["contact", "Contact"],
 ];
 
-/** Chemin → clé de page active (pour surligner la navigation). */
+/** Chemin → clé de page active (pour surligner la navigation).
+ *  « how » / « products » sont des ancres de la home : pas de chemin dédié. */
 export function pathToPage(pathname: string): PageKey | null {
   if (pathname === "/") return "home";
-  if (pathname.startsWith("/comment-ca-marche")) return "how";
-  if (pathname.startsWith("/produits")) return "products";
   if (pathname.startsWith("/faq")) return "faq";
   if (pathname.startsWith("/support")) return "support";
+  if (pathname.startsWith("/contact")) return "contact";
   return null;
 }
 

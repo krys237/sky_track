@@ -7,6 +7,7 @@ import {
   Mail, MessageCircle, Check, Loader, PackageSearch, LogOut, ArrowRight,
 } from "lucide-react";
 import { Btn } from "@/components/ui";
+import { PhoneField } from "@/components/PhoneField";
 import { createClient } from "@/lib/supabase/client";
 import { profileToMetadata, type Profile } from "@/lib/profile";
 
@@ -91,7 +92,11 @@ export function AccountForm({ email, initial }: { email: string; initial: Profil
             </div>
             <div>
               <label className="fld">{p.contactType === "email" ? "Adresse email" : "Numéro WhatsApp"}</label>
-              <input value={p.contact} onChange={(e) => upd("contact", e.target.value)} placeholder={p.contactType === "email" ? "vous@exemple.com" : "+237 6 XX XX XX XX"} inputMode={p.contactType === "email" ? "email" : "tel"} />
+              {p.contactType === "email" ? (
+                <input value={p.contact} onChange={(e) => upd("contact", e.target.value)} placeholder="vous@exemple.com" inputMode="email" />
+              ) : (
+                <PhoneField value={p.contact} onChange={(v) => upd("contact", v)} placeholder="6 XX XX XX XX" />
+              )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>

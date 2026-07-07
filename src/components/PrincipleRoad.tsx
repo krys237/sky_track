@@ -11,28 +11,36 @@ import { STEPS_FUNC } from "@/lib/content";
  * label. Repli en timeline verticale sous 900px.
  */
 
-// Accents par étape, alignés sur le dégradé de la route.
-const ACCENTS = ["#2563EB", "#0891B2", "#10B981", "#D97706", "#F59E0B"];
+// Accent unique = le vert de marque (route désormais verte uniforme).
+const ACCENT = "#059669";
 
 // Points de la route dans le repère SVG (viewBox 1000×520). w = largeur du ruban.
+// x ONDULE (droite→gauche→droite→gauche) pour serpenter en S comme le modèle ;
+// y progresse toujours vers le bas = la route vient vers le lecteur (perspective).
 const ROAD = [
-  { x: 895, y: 150, w: 26 },
-  { x: 700, y: 214, w: 36 },
-  { x: 498, y: 286, w: 48 },
-  { x: 296, y: 378, w: 62 },
-  { x: 120, y: 462, w: 78 },
+  { x: 880, y: 118, w: 18 },
+  { x: 560, y: 196, w: 31 },
+  { x: 726, y: 312, w: 45 },
+  { x: 405, y: 400, w: 64 },
+  { x: 150, y: 480, w: 86 },
 ];
 
-// Marqueurs (diamètre en cqw = % de la largeur du conteneur) + placement du label.
-const MARKERS: { dia: number; side: "right" | "center" | "left" | "front" }[] = [
-  { dia: 5.8, side: "right" },
-  { dia: 7.2, side: "center" },
-  { dia: 8.8, side: "center" },
-  { dia: 10.8, side: "left" },
-  { dia: 12.8, side: "front" },
+// Marqueurs : diamètre en cqw (far petit → near grand = profondeur) + placement du label.
+// lx = décalage horizontal du label depuis l'épingle (en cqw, donc responsive) ;
+// align = alignement du texte. Choisis pour que 2 labels voisins ne se chevauchent jamais :
+// 02 pousse à gauche, 03 pousse à droite (au point d'inflexion), 05 recentré (bord gauche).
+// lx/ly = décalage du label (cqw) depuis l'aplomb de l'épingle. Labels resserrés
+// contre chaque épingle (cf. capture annotée) : proches du numéro, côté ouvert,
+// sans mordre sur le ruban (03 reste calée dans la poche à gauche de la route entrante).
+const MARKERS: { dia: number; lx: number; ly: number }[] = [
+  { dia: 5.0, lx: 0.5, ly: 1 },
+  { dia: 6.6, lx: -2, ly: 1.5 },
+  { dia: 8.4, lx: -3, ly: -2.8 },
+  { dia: 10.6, lx: -2, ly: 1.5 },
+  { dia: 13.2, lx: 1, ly: 0.5 },
 ];
 
-// Résumés courts pour les labels de la route (le détail complet vit sur /comment-ca-marche).
+// Résumés courts pour les labels de la route (affichés dans la section « Comment ça marche »).
 const SHORT = [
   "Un signal Bluetooth discret et économe.",
   "Les téléphones Android autour la captent.",
@@ -42,7 +50,7 @@ const SHORT = [
 ];
 
 const VB_W = 1000;
-const VB_H = 520;
+const VB_H = 560;
 
 // ---- Génération du ruban : centerline lissée (Catmull-Rom) + offset perpendiculaire ----
 type P = { x: number; y: number; w: number };
@@ -90,38 +98,45 @@ export function PrincipleRoad() {
       <div className="principle-road" role="list" aria-label="Les cinq étapes du principe">
         <svg className="principle-svg" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
           <defs>
+            {/* Vert de marque, uniforme — léger dégalbe clair→profond pour garder le relief */}
             <linearGradient id="pr-road" x1="900" y1="120" x2="140" y2="470" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#2563EB" />
-              <stop offset="0.5" stopColor="#10B981" />
-              <stop offset="1" stopColor="#F59E0B" />
+              <stop offset="0" stopColor="#10B981" />
+              <stop offset="1" stopColor="#059669" />
             </linearGradient>
+            {/* Ombre douce sous le ruban → la route « repose » sur le sol */}
+            <filter id="pr-shadow" x="-10%" y="-10%" width="120%" height="140%">
+              <feDropShadow dx="0" dy="14" stdDeviation="16" floodColor="#0E1E33" floodOpacity="0.18" />
+            </filter>
           </defs>
-          <path d={path} fill="url(#pr-road)" />
-          <path d={path} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="1.5" />
+          <path d={path} fill="url(#pr-road)" filter="url(#pr-shadow)" />
+          {/* Liseré clair en haut + ombre interne en bas pour le galbe du ruban */}
+          <path d={path} fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" />
         </svg>
 
         {STEPS_FUNC.map((s, i) => {
           const road = ROAD[i];
           const m = MARKERS[i];
-          const accent = ACCENTS[i % ACCENTS.length];
           return (
             <div
               key={i}
               role="listitem"
-              className={`pr-marker pr-side-${m.side}`}
+              className="pr-marker"
               style={{ left: `${(road.x / VB_W) * 100}%`, top: `${(road.y / VB_H) * 100}%` }}
             >
-              <div className="pr-label">
-                <div className="pr-label-title"><Play size={12} fill={accent} color={accent} /> {s.t}</div>
+              <div className="pr-label" style={{ transform: `translate(${m.lx}cqw, ${m.ly}cqw)` }}>
+                <div className="pr-label-title"><Play size={12} fill={ACCENT} color={ACCENT} /> {s.t}</div>
                 <p className="pr-label-desc">{SHORT[i]}</p>
               </div>
               <div
                 className="pr-dot"
-                style={{ width: `${m.dia}cqw`, height: `${m.dia}cqw`, boxShadow: `0 0 0 ${m.dia * 0.055}cqw ${accent}22, 0 14px 26px -8px rgba(16,42,73,.5)` }}
+                style={{ width: `${m.dia}cqw`, height: `${m.dia}cqw`, boxShadow: `0 0 0 ${m.dia * 0.055}cqw ${ACCENT}22, 0 14px 26px -8px rgba(16,42,73,.5)` }}
               >
                 <span className="pr-num" style={{ fontSize: `${m.dia * 0.34}cqw` }}>{s.n}</span>
               </div>
-              <span className="pr-stem" style={{ background: `linear-gradient(${accent},${accent}00)` }} />
+              {/* Pied planté dans la route (hauteur ∝ taille = perspective) */}
+              <span className="pr-stem" style={{ height: `${m.dia * 0.5}cqw`, background: `linear-gradient(${ACCENT},${ACCENT}00)` }} />
+              {/* Ombre portée sur la route au point de contact */}
+              <span className="pr-base" style={{ width: `${m.dia * 1.05}cqw`, height: `${m.dia * 0.3}cqw` }} />
             </div>
           );
         })}
@@ -130,14 +145,13 @@ export function PrincipleRoad() {
       {/* Mobile : timeline verticale, même langage visuel */}
       <ol className="principle-stack">
         {STEPS_FUNC.map((s, i) => {
-          const accent = ACCENTS[i % ACCENTS.length];
           return (
             <li key={i} className="pr-row">
-              <div className="pr-dot pr-dot-sm" style={{ boxShadow: `0 0 0 3px ${accent}22, 0 10px 20px -8px rgba(16,42,73,.45)` }}>
+              <div className="pr-dot pr-dot-sm" style={{ boxShadow: `0 0 0 3px ${ACCENT}22, 0 10px 20px -8px rgba(16,42,73,.45)` }}>
                 <span className="pr-num">{s.n}</span>
               </div>
               <div className="pr-row-body">
-                <h3 className="pr-label-title"><Play size={12} fill={accent} color={accent} /> {s.t}</h3>
+                <h3 className="pr-label-title"><Play size={12} fill={ACCENT} color={ACCENT} /> {s.t}</h3>
                 <p className="pr-label-desc">{s.d}</p>
               </div>
             </li>

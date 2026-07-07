@@ -62,7 +62,7 @@ export default async function MesCommandesPage() {
             </div>
             <h2 className="font-display" style={{ fontSize: 19, marginBottom: 8 }}>Aucune commande pour le moment</h2>
             <p className="muted" style={{ fontSize: 14, marginBottom: 20 }}>Vos commandes apparaîtront ici une fois passées.</p>
-            <Link href="/produits"><span className="sig" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>Découvrir les packs <ArrowRight size={15} /></span></Link>
+            <Link href="/#products"><span className="sig" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>Découvrir les packs <ArrowRight size={15} /></span></Link>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
@@ -80,7 +80,7 @@ export default async function MesCommandesPage() {
                   </div>
                   <div style={{ borderTop: "1px solid var(--line)", marginTop: 14, paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
                     <span className="muted" style={{ fontSize: 14 }}>
-                      {pack?.name ?? c.pack} · {c.quantite} carte{c.quantite > 1 ? "s" : ""}
+                      {pack ? `SkyTrack ${pack.name}` : c.pack} · {c.quantite} unité{c.quantite > 1 ? "s" : ""}
                       {c.moyen_paiement ? ` · ${PAY_LABEL[c.moyen_paiement]}` : ""}
                     </span>
                     <span className="font-display" style={{ fontSize: 18, fontWeight: 700 }}>{fcfa(c.montant)}</span>
