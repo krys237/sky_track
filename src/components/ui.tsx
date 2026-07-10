@@ -1,16 +1,17 @@
 "use client";
 
 import React from "react";
+// Aliasé : ce module utilise aussi le constructeur DOM `new Image()` plus bas.
+import NextImage from "next/image";
 import { Signal, Smartphone, MapPin, Search, Wifi, Battery, Check } from "lucide-react";
 
 /* ------------------------------- Logo ------------------------------- */
+// La marque officielle est un lockup vertical (pin + wordmark). Dans la capsule
+// de nav on n'utilise que le pin, associé au wordmark typographique.
 export function Logo({ onClick }: { onClick?: () => void }) {
   return (
-    <button className="reset" onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-      <span style={{ position: "relative", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ position: "absolute", inset: 0, borderRadius: 10, background: "linear-gradient(135deg,rgba(59,130,246,.28),rgba(16,185,129,.18))", border: "1px solid var(--line)" }} />
-        <Signal size={18} style={{ color: "var(--signal)", position: "relative" }} />
-      </span>
+    <button className="reset" onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+      <NextImage src="/logo-mark.png" alt="" width={34} height={34} priority style={{ width: 30, height: 30, objectFit: "contain" }} />
       <span className="font-display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.02em" }}>
         Sky<span className="sig">Track</span>
       </span>

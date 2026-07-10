@@ -475,12 +475,15 @@ a.reset,button.reset{all:unset}
    Reprise du modèle : bandeau sombre (nav flottante par-dessus) → grande carte
    blanche en chevauchement, 2 colonnes (coordonnées | formulaire) → carte Maps. */
 .contact-page{position:relative}
-/* Bandeau : remonte derrière la nav sticky translucide, texture « carte » sombre */
+/* Bandeau : remonte derrière la nav sticky translucide, photo de couverture sombre.
+   La couverture embarque déjà un logo SkyTrack filigrané en son centre : le voile
+   reste assez dense pour qu'il retombe en texture derrière le titre, sans venir
+   concurrencer la marque de la nav. */
 .contact-hero{position:relative;margin-top:-92px;padding:128px 20px 150px;overflow:hidden;
-  background:linear-gradient(180deg,rgba(10,20,38,.82),rgba(14,30,51,.92)),url(/map-bg.jpg) center/cover no-repeat;}
+  background:linear-gradient(180deg,rgba(10,20,38,.76),rgba(14,30,51,.88)),url(/bg-cover-contact.jpg) center/cover no-repeat;}
 .contact-hero::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(680px 340px at 50% -8%,rgba(37,99,235,.35),transparent 60%),
-             radial-gradient(520px 320px at 82% 118%,rgba(16,185,129,.22),transparent 60%);}
+  background:radial-gradient(680px 340px at 50% -8%,rgba(37,99,235,.28),transparent 60%),
+             radial-gradient(520px 320px at 82% 118%,rgba(16,185,129,.20),transparent 60%);}
 .contact-hero-inner{position:relative;z-index:1;max-width:640px;margin:0 auto;text-align:center}
 .contact-hero h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:#fff;
   font-size:clamp(32px,6vw,52px);letter-spacing:-.03em;line-height:1.05;margin:0}
