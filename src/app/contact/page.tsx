@@ -11,14 +11,14 @@ export const metadata = {
 const INFO = [
   { icon: MapPin, title: "Où nous sommes", lines: [{ text: "Yaoundé · Cameroun" }, { text: "Livraison dans tout le pays" }] },
   { icon: Mail, title: "Écrivez-nous", lines: [{ text: "hello@skytrack.cm", href: "mailto:hello@skytrack.cm" }, { text: "Réponse sous 24 h" }] },
-  { icon: Phone, title: "Appelez / WhatsApp", lines: [{ text: "+237 6 00 00 00 00", href: "https://wa.me/237600000000" }, { text: "Lun–Sam, 8h–19h" }] },
+  { icon: Phone, title: "Appelez / WhatsApp", lines: [{ text: "+237 640 759 203", href: "https://wa.me/237640759203" }, { text: "Lun–Sam, 8h–19h" }] },
 ] as const;
 
 // Réseaux sociaux (placeholders — à remplacer par les vraies URL des comptes SkyTrack).
 const SOCIAL = [
   { icon: Facebook, label: "Facebook", href: "#" },
   { icon: Instagram, label: "Instagram", href: "#" },
-  { icon: MessageCircle, label: "WhatsApp", href: "https://wa.me/237600000000" },
+  { icon: MessageCircle, label: "WhatsApp", href: "https://wa.me/237640759203" },
   { icon: Youtube, label: "YouTube", href: "#" },
 ] as const;
 
