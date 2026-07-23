@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { supabaseUrl, supabaseServiceRoleKey } from "./env";
+import { resilientFetch } from "./fetch";
 
 /**
  * Client d'administration (clé service_role) — CÔTÉ SERVEUR UNIQUEMENT.
@@ -11,5 +12,8 @@ import { supabaseUrl, supabaseServiceRoleKey } from "./env";
 export function createAdminClient() {
   return createSupabaseClient(supabaseUrl(), supabaseServiceRoleKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
+    // Timeout explicite + réessais : le réseau de production frôle
+    // régulièrement le timeout de connexion par défaut (cf. ./fetch).
+    global: { fetch: resilientFetch },
   });
 }

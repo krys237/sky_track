@@ -10,7 +10,7 @@ import { Btn } from "./ui";
 const FEATURES: [LucideIcon, string][] = [
   [Battery, "Longue autonomie, rechargeable"],
   [Volume2, "Sonnerie forte intégrée"],
-  [Smartphone, "Android uniquement (Google Find Hub)"],
+  [Smartphone, "Android (Find Hub) ou iPhone (Localiser)"],
 ];
 
 export function PackGrid({

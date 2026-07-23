@@ -6,38 +6,41 @@ import { STEPS_FUNC } from "@/lib/content";
 
 /**
  * « Le principe » — infographie route sinueuse (réf. model-principe), adaptée SkyTrack :
- * un ruban en dégradé bleu→vert→ambre serpente de l'arrière (étape 01, petite) vers
- * l'avant (étape 05, grande), avec des marqueurs « sucette » numérotés surmontés d'un
- * label. Repli en timeline verticale sous 900px.
+ * un ruban vert serpente de l'arrière-GAUCHE (étape 01, petite) vers l'avant-DROITE
+ * (étape 05, grande), avec des marqueurs « sucette » numérotés surmontés d'un label.
+ * Sens de lecture gauche→droite = sens naturel de notre alphabet (01…05).
+ * Repli en timeline verticale sous 900px.
  */
 
 // Accent unique = le vert de marque (route désormais verte uniforme).
 const ACCENT = "#059669";
 
 // Points de la route dans le repère SVG (viewBox 1000×520). w = largeur du ruban.
-// x ONDULE (droite→gauche→droite→gauche) pour serpenter en S comme le modèle ;
+// x ONDULE (gauche→droite→gauche→droite) pour serpenter en S : l'étape 01 démarre à
+// GAUCHE (petite, au loin) et la 05 arrive à DROITE (grande, au premier plan), de sorte
+// que la numérotation se lise dans notre sens naturel gauche→droite.
 // y progresse toujours vers le bas = la route vient vers le lecteur (perspective).
 const ROAD = [
-  { x: 880, y: 118, w: 18 },
-  { x: 560, y: 196, w: 31 },
-  { x: 726, y: 312, w: 45 },
-  { x: 405, y: 400, w: 64 },
-  { x: 150, y: 480, w: 86 },
+  { x: 120, y: 118, w: 18 },
+  { x: 440, y: 196, w: 31 },
+  { x: 274, y: 312, w: 45 },
+  { x: 595, y: 400, w: 64 },
+  { x: 850, y: 480, w: 86 },
 ];
 
 // Marqueurs : diamètre en cqw (far petit → near grand = profondeur) + placement du label.
 // lx = décalage horizontal du label depuis l'épingle (en cqw, donc responsive) ;
 // align = alignement du texte. Choisis pour que 2 labels voisins ne se chevauchent jamais :
-// 02 pousse à gauche, 03 pousse à droite (au point d'inflexion), 05 recentré (bord gauche).
+// (miroir de l'ancienne mise en page) 02 pousse à droite, 03 pousse à gauche (au point
+// d'inflexion), 05 recentré (bord droit).
 // lx/ly = décalage du label (cqw) depuis l'aplomb de l'épingle. Labels resserrés
-// contre chaque épingle (cf. capture annotée) : proches du numéro, côté ouvert,
-// sans mordre sur le ruban (03 reste calée dans la poche à gauche de la route entrante).
+// contre chaque épingle : proches du numéro, côté ouvert, sans mordre sur le ruban.
 const MARKERS: { dia: number; lx: number; ly: number }[] = [
-  { dia: 5.0, lx: 0.5, ly: 1 },
-  { dia: 6.6, lx: -2, ly: 1.5 },
-  { dia: 8.4, lx: -3, ly: -2.8 },
-  { dia: 10.6, lx: -2, ly: 1.5 },
-  { dia: 13.2, lx: 1, ly: 0.5 },
+  { dia: 5.0, lx: -0.5, ly: 1 },
+  { dia: 6.6, lx: 2, ly: 1.5 },
+  { dia: 8.4, lx: -11, ly: 0 },
+  { dia: 10.6, lx: 2, ly: 1.5 },
+  { dia: 13.2, lx: -1, ly: 0.5 },
 ];
 
 // Résumés courts pour les labels de la route (affichés dans la section « Comment ça marche »).
@@ -64,10 +67,11 @@ function catmull(p0: P, p1: P, p2: P, p3: P, t: number) {
 function ribbonPath(base: P[]): string {
   const first = base[0], last = base[base.length - 1];
   // Prolonge les deux extrémités hors-cadre pour que la route « sorte » de la scène.
+  // (miroir : elle entre par le haut-gauche et sort par le bas-droite.)
   const pts: P[] = [
-    { x: first.x + 130, y: first.y - 42, w: first.w * 0.7 },
+    { x: first.x - 130, y: first.y - 42, w: first.w * 0.7 },
     ...base,
-    { x: last.x - 120, y: last.y + 46, w: last.w * 1.05 },
+    { x: last.x + 120, y: last.y + 46, w: last.w * 1.05 },
   ];
   const samples: { x: number; y: number; nx: number; ny: number; w: number }[] = [];
   const N = 26;
@@ -99,7 +103,7 @@ export function PrincipleRoad() {
         <svg className="principle-svg" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
           <defs>
             {/* Vert de marque, uniforme — léger dégalbe clair→profond pour garder le relief */}
-            <linearGradient id="pr-road" x1="900" y1="120" x2="140" y2="470" gradientUnits="userSpaceOnUse">
+            <linearGradient id="pr-road" x1="100" y1="120" x2="860" y2="470" gradientUnits="userSpaceOnUse">
               <stop offset="0" stopColor="#10B981" />
               <stop offset="1" stopColor="#059669" />
             </linearGradient>

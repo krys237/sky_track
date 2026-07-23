@@ -32,7 +32,9 @@ const PAYMENTS: { id: string; name: string; img: string; desc: string; tag: stri
 const USAGE_STATS: [LucideIcon, string, string][] = [
   [Signal, "+1 milliard", "d'appareils dans le réseau"],
   [Lock, "Chiffré", "localisation de bout en bout"],
-  [Smartphone, "Android", "réseau Google Find Hub"],
+  // Valeur courte volontairement : les 4 stats sont alignées sur une seule
+  // ligne, « Android & iPhone » passait à la ligne et décalait son libellé.
+  [Smartphone, "Android · iOS", "Find Hub ou Localiser"],
   [Truck, "Cameroun", "livraison locale"],
 ];
 
@@ -79,7 +81,7 @@ export default function HomePage() {
         <div className="stack-sm" style={{ position: "relative", zIndex: 1, display: "flex", gap: 40, alignItems: "center" }}>
           <div style={{ flex: "1 1 480px" }} className="reveal">
             {/* <div className="chip" style={{ marginBottom: 22 }}>
-              <span className="pulse-dot" /> Réseau Find Hub de Google · +1 milliard d&apos;appareils
+              <span className="pulse-dot" /> Réseaux Find Hub de Google & Localiser d&apos;Apple
             </div> */}
             <h1 className="font-display" style={{ fontSize: "clamp(34px,6.4vw,60px)", fontWeight: 800, lineHeight: 1.03, letterSpacing: "-.03em", margin: 0 }}>
               Ne perdez plus jamais<br /><span className="sig">ce qui compte.</span>

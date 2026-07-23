@@ -24,7 +24,7 @@ export function Footer() {
         <div className="stack-sm" style={{ display: "flex", gap: 30, justifyContent: "space-between", flexWrap: "wrap" }}>
           <div style={{ maxWidth: 300 }}>
             <Logo onClick={() => go("home")} />
-            <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 14 }}>La carte qui retrouve vos objets de valeur, propulsée par le réseau Google Find Hub (Android).</p>
+            <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 14 }}>La carte qui retrouve vos objets de valeur, propulsée par les réseaux Find Hub (Android) et Localiser (iPhone).</p>
           </div>
           <div style={{ display: "flex", gap: 50, flexWrap: "wrap" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>

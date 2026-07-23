@@ -104,6 +104,35 @@ a.reset,button.reset{all:unset}
   box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:pd 2s infinite}
 @keyframes pd{0%{box-shadow:0 0 0 0 rgba(16,185,129,.45)}70%{box-shadow:0 0 0 12px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
 
+/* Carte SkyTrack miniature affichée DANS la maquette de téléphone.
+   Le style vivait uniquement dans le prototype legacy SkyTrack.jsx et n'avait
+   jamais été porté ici : la carte se rendait en div nu, sans dimension. Teintes
+   réaccordées à la palette claire (l'original était en turquoise sombre). */
+.thecard{width:118px;height:74px;border-radius:12px;position:relative;z-index:3;
+  background:linear-gradient(135deg,#143654,#0B1B2C);border:1px solid rgba(5,150,105,.45);
+  box-shadow:0 14px 30px -14px rgba(16,42,73,.55),0 0 0 5px rgba(5,150,105,.07);
+  display:flex;flex-direction:column;justify-content:space-between;padding:11px}
+
+/* Guide de configuration — étapes cliquables.
+   `button.reset{all:unset}` remet box-sizing à content-box : sans le rétablir,
+   la largeur 100% + le padding débordent de la colonne (même correctif que
+   .phone-cc-opt plus haut). */
+.setup-step{all:unset;box-sizing:border-box;display:flex;gap:14px;align-items:flex-start;
+  width:100%;padding:7px 9px;border-radius:10px;cursor:pointer;text-align:left;
+  transition:background .18s ease}
+.setup-step:hover{background:var(--surface-2)}
+.setup-step.on{background:rgba(5,150,105,.07)}
+.setup-step-num{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.3);color:var(--signal);
+  transition:background .18s ease,color .18s ease,border-color .18s ease}
+.setup-step.on .setup-step-num{background:var(--signal);border-color:var(--signal);color:#fff}
+.setup-step-txt{font-size:14.5px;line-height:1.55;margin-top:3px;opacity:.8}
+.setup-step.on .setup-step-txt{opacity:1}
+
+.setup-toggle{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;
+  width:100%;padding:13px 15px;cursor:pointer;text-align:left}
+
 /* phone mockup (tunnel — download step) */
 .phone{width:230px;max-width:74vw;border-radius:30px;padding:11px;background:linear-gradient(160deg,#1b2b3d,#0f1a28);
   border:1px solid rgba(16,42,73,.3);box-shadow:0 30px 60px -30px rgba(16,42,73,.5)}
@@ -192,8 +221,14 @@ a.reset,button.reset{all:unset}
   padding:9px;border-radius:999px;transition:background .16s ease}
 .menu-btn:hover{background:var(--surface-2)}
 
+/* Tunnel — colonne récapitulatif. Le décalage compense la marge haute du titre
+   de la colonne de gauche, pour que la carte démarre sur la même ligne que le
+   h2 « Paiement ». En pile (mobile) le décalage n'a plus lieu d'être : le `gap`
+   du conteneur suffit. */
+.tunnel-aside{margin-top:20px}
+
 /* Helpers partagés (hero, pages) : breakpoint historique 760 conservé */
-@media (max-width:760px){ .hide-sm{display:none!important} .stack-sm{flex-direction:column!important;align-items:stretch!important} .only-sm{display:block} }
+@media (max-width:760px){ .hide-sm{display:none!important} .stack-sm{flex-direction:column!important;align-items:stretch!important} .only-sm{display:block} .tunnel-aside{margin-top:0} }
 /* Navbar capsule : bascule vers le menu hamburger un peu plus tôt (liens larges) */
 @media (max-width:860px){ .nav-links,.nav-actions{display:none!important} .menu-btn{display:inline-flex} }
 /* Le panneau mobile ne doit jamais apparaître sur desktop (même si l'état reste ouvert après resize) */

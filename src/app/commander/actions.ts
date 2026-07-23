@@ -8,6 +8,8 @@ import { finalizePayment } from "@/lib/payments/finalize";
 import { PACKS } from "@/lib/content";
 import type { ContactType, PackId, PayMethod } from "@/lib/types";
 
+export type StatutCommande = "initiee" | "payee" | "echouee" | "expediee" | "livree";
+
 export interface CreateOrderInput {
   pack: PackId;
   contactType: ContactType;
@@ -17,6 +19,13 @@ export interface CreateOrderInput {
   address: string;
   /** Moyen de paiement pressenti (informatif à ce stade). */
   pay?: PayMethod | null;
+  /**
+   * Clé d'idempotence produite par le navigateur, stable tant que l'issue de la
+   * tentative reste inconnue. C'est elle qui évite le doublon quand la réponse
+   * se perd en route et que le client réessaie sans savoir si la commande a été
+   * créée. Le navigateur en génère une nouvelle après un échec **avéré**.
+   */
+  idempotencyKey: string;
 }
 
 export interface CreateOrderResult {
@@ -24,6 +33,10 @@ export interface CreateOrderResult {
   error?: string;
   ref?: string;
   commandeId?: string;
+  /** Statut courant — le tunnel s'en sert pour ne pas faire repayer une commande déjà réglée. */
+  statut?: StatutCommande;
+  /** Vrai si la commande existait déjà : réessai après une réponse perdue. */
+  reused?: boolean;
 }
 
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans I,O,0,1 (lisibilité)
@@ -38,6 +51,11 @@ function isPackId(v: string): v is PackId {
   return PACKS.some((p) => p.id === v);
 }
 
+/** Le doublon porte-t-il sur la clé d'idempotence, ou sur la référence ? */
+function isIdempotencyConflict(err: { message?: string; details?: string }): boolean {
+  return `${err.message ?? ""} ${err.details ?? ""}`.includes("idempotency");
+}
+
 /**
  * Persiste une commande (modèle « invité + compte optionnel ») :
  *  1. crée la fiche client (rattachée à l'utilisateur si une session existe) ;
@@ -45,6 +63,11 @@ function isPackId(v: string): v is PackId {
  *
  * Le montant et la quantité sont dérivés du pack **côté serveur** — le prix
  * envoyé par le navigateur n'est jamais utilisé (anti-falsification).
+ *
+ * **Idempotent** : rappelée avec la même `idempotencyKey`, elle retrouve la
+ * commande déjà créée au lieu d'en fabriquer une seconde. Indispensable ici,
+ * car un timeout réseau laisse le navigateur dans l'ignorance de ce qui a été
+ * écrit — il réessayait alors en dupliquant client et commande.
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
   // Validation minimale ------------------------------------------------------
@@ -54,15 +77,25 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const contact = (input.contact || "").trim();
   const city = (input.city || "").trim();
   const address = (input.address || "").trim();
+  const idemKey = (input.idempotencyKey || "").trim();
   if (!name || !contact || !city || !address) {
     return { ok: false, error: "Coordonnées incomplètes." };
   }
   if (input.contactType !== "email" && input.contactType !== "whatsapp") {
     return { ok: false, error: "Type de contact invalide." };
   }
+  if (!idemKey || idemKey.length > 100) {
+    return { ok: false, error: "Requête invalide (clé de tentative)." };
+  }
 
   const pack = PACKS.find((p) => p.id === input.pack)!;
-  const admin = createAdminClient();
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    console.error("[createOrder] configuration Supabase absente :", e);
+    return { ok: false, error: "Service de commande indisponible (configuration)." };
+  }
 
   // Utilisateur connecté ? (session portée par les cookies) ------------------
   let userId: string | null = null;
@@ -74,23 +107,87 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     userId = null; // pas de session : commande invité
   }
 
+  const coords = {
+    user_id: userId,
+    nom: name,
+    contact_type: input.contactType,
+    contact_value: contact,
+    ville: city,
+    adresse: address,
+  };
+
+  // 0. Cette tentative a-t-elle déjà abouti ? ---------------------------------
+  // Cas typique : la requête précédente a créé la commande, mais la réponse
+  // s'est perdue (timeout). On rend la commande existante au lieu d'en créer
+  // une seconde — et on rafraîchit les données modifiables au passage.
+  const { data: existing, error: lookupErr } = await admin
+    .from("commandes")
+    .select("id, ref, statut, client_id")
+    .eq("idempotency_key", idemKey)
+    .maybeSingle();
+
+  if (lookupErr) {
+    console.error("[createOrder] lecture par clé d'idempotence échouée :", {
+      code: lookupErr.code,
+      message: lookupErr.message,
+      details: lookupErr.details,
+      hint: lookupErr.hint,
+    });
+    return { ok: false, error: "Service de commande momentanément indisponible." };
+  }
+
+  if (existing) {
+    // Une commande déjà payée (ou expédiée) ne se remet pas en jeu : on la
+    // renvoie telle quelle, le tunnel enchaînera sur la confirmation.
+    if (existing.statut === "initiee") {
+      await admin.from("clients").update(coords).eq("id", existing.client_id);
+      await admin
+        .from("commandes")
+        .update({
+          pack: pack.id,
+          quantite: pack.cards,
+          montant: pack.price,
+          moyen_paiement: input.pay ?? null,
+        })
+        .eq("id", existing.id);
+    }
+    return {
+      ok: true,
+      ref: existing.ref,
+      commandeId: existing.id,
+      statut: existing.statut,
+      reused: true,
+    };
+  }
+
   // 1. Fiche client ----------------------------------------------------------
   const { data: client, error: clientErr } = await admin
     .from("clients")
-    .insert({
-      user_id: userId,
-      nom: name,
-      contact_type: input.contactType,
-      contact_value: contact,
-      ville: city,
-      adresse: address,
-    })
+    .insert(coords)
     .select("id")
     .single();
 
   if (clientErr || !client) {
+    // Sans cette trace, toute panne (réseau, clé invalide, RLS, schéma) se
+    // présente au client comme le même message générique — indébogable.
+    console.error("[createOrder] insert clients échoué :", {
+      code: clientErr?.code,
+      message: clientErr?.message,
+      details: clientErr?.details,
+      hint: clientErr?.hint,
+    });
     return { ok: false, error: "Échec de l'enregistrement du client." };
   }
+
+  // La fiche vient d'être créée : si la commande n'aboutit pas, elle ne doit
+  // pas survivre. Sans cette compensation (il n'y a pas de transaction entre
+  // deux appels PostgREST), chaque échec laissait un client orphelin en base.
+  const dropOrphanClient = async () => {
+    const { error } = await admin.from("clients").delete().eq("id", client.id);
+    if (error) {
+      console.error("[createOrder] client orphelin non supprimé :", client.id, error.message);
+    }
+  };
 
   // 2. Commande (avec réf unique, une nouvelle tentative en cas de collision) -
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -106,18 +203,58 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         devise: "XAF",
         statut: "initiee",
         moyen_paiement: input.pay ?? null,
+        idempotency_key: idemKey,
       })
-      .select("id, ref")
+      .select("id, ref, statut")
       .single();
 
     if (!cmdErr && commande) {
-      return { ok: true, ref: commande.ref, commandeId: commande.id };
+      return {
+        ok: true,
+        ref: commande.ref,
+        commandeId: commande.id,
+        statut: commande.statut,
+      };
     }
-    // 23505 = unique_violation (collision de réf) → on retente
-    if (cmdErr && cmdErr.code !== "23505") {
+
+    // 23505 = unique_violation. Deux contraintes peuvent la déclencher :
+    if (cmdErr && cmdErr.code === "23505") {
+      // • la clé d'idempotence → une requête concurrente a gagné la course ;
+      //   on adopte sa commande plutôt que d'en créer une deuxième.
+      if (isIdempotencyConflict(cmdErr)) {
+        await dropOrphanClient();
+        const { data: raced } = await admin
+          .from("commandes")
+          .select("id, ref, statut")
+          .eq("idempotency_key", idemKey)
+          .maybeSingle();
+        if (raced) {
+          return {
+            ok: true,
+            ref: raced.ref,
+            commandeId: raced.id,
+            statut: raced.statut,
+            reused: true,
+          };
+        }
+        return { ok: false, error: "Échec de l'enregistrement de la commande." };
+      }
+      continue; // • la référence → simple collision, on en tire une autre.
+    }
+
+    if (cmdErr) {
+      console.error("[createOrder] insert commandes échoué :", {
+        code: cmdErr.code,
+        message: cmdErr.message,
+        details: cmdErr.details,
+        hint: cmdErr.hint,
+      });
+      await dropOrphanClient();
       return { ok: false, error: "Échec de l'enregistrement de la commande." };
     }
   }
+
+  await dropOrphanClient();
   return { ok: false, error: "Impossible de générer une référence unique." };
 }
 
@@ -138,6 +275,13 @@ export interface InitiatePaymentResult {
   transactionId?: string;
   status?: "pending" | "success" | "failed";
   redirectUrl?: string;
+  /**
+   * Statut de la commande au moment du refus. Il permet au tunnel de
+   * distinguer « déjà payée » (→ on enchaîne sur la confirmation) d'une vraie
+   * erreur — sans quoi un client dont le paiement a abouti pendant un timeout
+   * se voit proposer de payer une seconde fois.
+   */
+  statut?: StatutCommande;
 }
 
 /**
@@ -163,7 +307,11 @@ export async function initiatePayment(
 
   if (error || !commande) return { ok: false, error: "Commande introuvable." };
   if (commande.statut !== "initiee") {
-    return { ok: false, error: "Cette commande n'est plus en attente de paiement." };
+    return {
+      ok: false,
+      error: "Cette commande n'est plus en attente de paiement.",
+      statut: commande.statut,
+    };
   }
 
   // Enregistre le moyen de paiement choisi
@@ -184,7 +332,8 @@ export async function initiatePayment(
       method: input.method,
       payer: { name: client?.nom, phone: input.phone, contact: client?.contact_value },
     });
-  } catch {
+  } catch (e) {
+    console.error("[initiatePayment] agrégateur en échec :", e);
     return { ok: false, error: "L'agrégateur de paiement est indisponible." };
   }
 
@@ -195,7 +344,15 @@ export async function initiatePayment(
     transaction_id: initiation.transactionId,
     statut: initiation.status,
   });
-  if (payErr) return { ok: false, error: "Échec de l'enregistrement du paiement." };
+  if (payErr) {
+    console.error("[initiatePayment] insert paiements échoué :", {
+      code: payErr.code,
+      message: payErr.message,
+      details: payErr.details,
+      hint: payErr.hint,
+    });
+    return { ok: false, error: "Échec de l'enregistrement du paiement." };
+  }
 
   return {
     ok: true,
@@ -208,7 +365,7 @@ export async function initiatePayment(
 export interface OrderStatusResult {
   ok: boolean;
   error?: string;
-  statut?: "initiee" | "payee" | "echouee" | "expediee" | "livree";
+  statut?: StatutCommande;
 }
 
 /** Sonde le statut d'une commande (utilisé en attente de confirmation). */

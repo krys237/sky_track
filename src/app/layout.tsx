@@ -5,7 +5,7 @@ import { SiteChrome } from "@/components/SiteChrome";
 export const metadata: Metadata = {
   title: "SkyTrack — Ne perdez plus jamais ce qui compte",
   description:
-    "La carte de tracking SkyTrack se glisse dans votre portefeuille et le retrouve depuis votre téléphone Android, via le réseau Google Find Hub. Livraison au Cameroun, paiement MoMo, Orange Money ou Visa.",
+    "La carte de tracking SkyTrack se glisse dans votre portefeuille et le retrouve depuis votre téléphone Android ou iPhone, via les réseaux Google Find Hub et Localiser. Livraison au Cameroun, paiement MoMo, Orange Money ou Visa.",
 };
 
 export const viewport: Viewport = {
