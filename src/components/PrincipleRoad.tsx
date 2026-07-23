@@ -38,7 +38,7 @@ const ROAD = [
 const MARKERS: { dia: number; lx: number; ly: number }[] = [
   { dia: 5.0, lx: -0.5, ly: 1 },
   { dia: 6.6, lx: 2, ly: 1.5 },
-  { dia: 8.4, lx: -11, ly: 0 },
+  { dia: 8.4, lx: -12, ly: 9 },
   { dia: 10.6, lx: 2, ly: 1.5 },
   { dia: 13.2, lx: -1, ly: 0.5 },
 ];

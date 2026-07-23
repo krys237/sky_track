@@ -25,7 +25,7 @@ const PAYMENTS: { id: string; name: string; img: string; desc: string; tag: stri
   { id: "mtn", name: "MTN Mobile Money", img: "/payments/mtn-mobile-money.jpg", desc: "Payez depuis votre téléphone MTN, sans compte bancaire.", tag: "Sans banque" },
   { id: "orange", name: "Orange Money", img: "/payments/orange-money.png", desc: "Réglez directement avec votre solde Orange Money.", tag: "Instantané" },
   { id: "card", name: "Visa / Mastercard", img: "/payments/visa-mastercard.webp", desc: "Carte bancaire internationale, débit sécurisé.", tag: "Paiement sécurisé" },
-  { id: "bank", name: "Virement bancaire", img: "/payments/bank-transfer.jpg", desc: "Virement depuis votre banque, pratique pour les packs.", tag: "Traçable" },
+  { id: "cash", name: "Paiement en cash", img: "/payments/cash.jpg", desc: "Payez en espèces sur place, en toute simplicité.", tag: "À la livraison" },
 ];
 
 // Stats de confiance affichées en bas de la section « À quoi ça sert » (icône · valeur forte · libellé)
@@ -236,7 +236,7 @@ export default function HomePage() {
           center
           eyebrow="Paiement facile"
           title="Prêt à ne plus rien perdre ?"
-          sub="Commandez en quelques minutes et payez comme ça vous arrange — Mobile Money, carte ou virement."
+          sub="Commandez en quelques minutes et payez comme ça vous arrange — Mobile Money, carte ou cash."
         />
         <div className="pay-grid">
           {PAYMENTS.map((p, i) => (
