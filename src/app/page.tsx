@@ -79,7 +79,7 @@ export default function HomePage() {
       <div className="wrap" style={{ position: "relative", overflow: "hidden", paddingTop: 46, paddingBottom: 40 }}>
         <HeroBackground />
         <div className="stack-sm" style={{ position: "relative", zIndex: 1, display: "flex", gap: 40, alignItems: "center" }}>
-          <div style={{ flex: "1 1 480px" }} className="reveal">
+          <div className="reveal hero-col-text">
             {/* <div className="chip" style={{ marginBottom: 22 }}>
               <span className="pulse-dot" /> Réseaux Find Hub de Google & Localiser d&apos;Apple
             </div> */}
@@ -94,7 +94,7 @@ export default function HomePage() {
               <Btn variant="ghost" onClick={() => go("how")}><PlayCircle size={18} /> Comment ça marche</Btn>
             </div>
           </div>
-          <div style={{ flex: "1.2 1 520px", display: "flex", justifyContent: "center", minWidth: 280, maxWidth: "100%" }} className="reveal">
+          <div className="reveal hero-col-media" style={{ display: "flex", justifyContent: "center", minWidth: 280, maxWidth: "100%" }}>
             <InteractiveFolderGallery />
           </div>
         </div>

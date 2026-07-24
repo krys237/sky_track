@@ -19,9 +19,12 @@ import { motion, useReducedMotion } from "framer-motion";
  * Purement décoratif → aria-hidden, pointer-events:none, z-index 0.
  */
 
-// Centre du radar (décentré vers la droite, sous le visuel produit)
-const CX = "70%";
-const CY = "48%";
+// Centre du motif (radar + carte) = DERRIÈRE la galerie produit. Piloté par des
+// variables CSS (.hero-bg dans globals.css) : à droite (70%/48%) en desktop où la
+// galerie est à droite ; recentré-bas quand la page passe en colonne, pour que le
+// motif suive la galerie au lieu de flotter dans le vide.
+const CX = "var(--hx, 70%)";
+const CY = "var(--hy, 48%)";
 
 // Anneaux concentriques, du plus externe au plus interne (rgb bruts des tokens de marque)
 const RINGS = [
@@ -36,6 +39,7 @@ export function HeroBackground() {
   return (
     <div
       aria-hidden
+      className="hero-bg"
       style={{
         position: "absolute",
         inset: 0,
@@ -48,7 +52,7 @@ export function HeroBackground() {
       <div
         style={{
           position: "absolute",
-          top: "50%",
+          top: CY,
           left: CX,
           transform: "translate(-50%,-50%)",
           width: "min(720px, 105vw)",

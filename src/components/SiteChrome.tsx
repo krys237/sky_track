@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
+import { InstallPrompt } from "./InstallPrompt";
 
 /**
  * Habillage commun : la barre de navigation est présente partout ;
@@ -19,6 +20,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <Nav />
       {children}
       {!inTunnel && <Footer />}
+      {!inTunnel && <InstallPrompt />}
     </div>
   );
 }

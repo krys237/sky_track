@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Signal, Battery } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 /**
  * Coque de téléphone servant de cadre aux écrans du guide de configuration.

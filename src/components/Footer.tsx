@@ -4,6 +4,7 @@ import React from "react";
 import { Logo } from "./ui";
 import { useNav } from "@/lib/useNav";
 import type { PageKey } from "@/lib/nav";
+import { openInstallPrompt } from "./InstallPrompt";
 
 export function Footer() {
   const { go, order } = useNav();
@@ -39,6 +40,7 @@ export function Footer() {
                 <div key={l} className="navlink" style={{ padding: "6px 0", fontSize: 14 }} onClick={() => go(k)}>{l}</div>
               ))}
               <div className="navlink" style={{ padding: "6px 0", fontSize: 14 }} onClick={() => order()}>Commander</div>
+              <div className="navlink" style={{ padding: "6px 0", fontSize: 14 }} onClick={() => openInstallPrompt()}>Installer l&apos;application</div>
             </div>
           </div>
         </div>

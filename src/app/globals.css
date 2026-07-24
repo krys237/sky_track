@@ -133,6 +133,27 @@ a.reset,button.reset{all:unset}
 .setup-toggle{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;
   width:100%;padding:13px 15px;cursor:pointer;text-align:left}
 
+/* Étape « Configuration » : guide à gauche, maquette de téléphone à droite. */
+.setup-guide-col{flex:1 1 380px;min-width:0}
+.setup-phone-col{flex:0 0 auto;display:flex;justify-content:center;width:100%;max-width:260px;margin:0 auto}
+
+/* Téléphone / tablette : la colonne passerait SOUS toute la liste d'étapes —
+   on lirait les consignes sans jamais voir l'écran s'animer. On bascule donc en
+   carrousel : une diapo = un écran + son texte, solidaires, qu'on fait défiler
+   au doigt (scroll-snap natif, aucune dépendance).
+   NB : une variante « image épinglée » était impossible ici, .sky-root porte
+   overflow-x:hidden, ce qui neutralise position:sticky sur tout le site. */
+.setup-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.setup-carousel::-webkit-scrollbar{display:none}
+.setup-slide{flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:14px;padding-top:4px}
+.setup-slide-text{display:flex;gap:12px;align-items:flex-start;width:100%;max-width:430px;
+  background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:13px 15px;
+  box-shadow:0 1px 2px rgba(16,42,73,.05)}
+.setup-swipe-hint{display:flex;align-items:center;justify-content:center;gap:7px;
+  margin-top:12px;font-size:12px;color:var(--muted2)}
+
 /* phone mockup (tunnel — download step) */
 .phone{width:230px;max-width:74vw;border-radius:30px;padding:11px;background:linear-gradient(160deg,#1b2b3d,#0f1a28);
   border:1px solid rgba(16,42,73,.3);box-shadow:0 30px 60px -30px rgba(16,42,73,.5)}
@@ -226,6 +247,20 @@ a.reset,button.reset{all:unset}
    h2 « Paiement ». En pile (mobile) le décalage n'a plus lieu d'être : le `gap`
    du conteneur suffit. */
 .tunnel-aside{margin-top:20px}
+
+/* Hero : colonnes texte / visuel. Les flex-basis (largeurs) ne valent qu'en
+   rangée ; en colonne l'axe principal devient vertical, donc on repasse en
+   basis auto pour que chaque bloc prenne la hauteur de son contenu (sinon le
+   basis fige une hauteur de 480/520px → grande bande vide). */
+.hero-col-text{flex:1 1 480px;min-width:0}
+.hero-col-media{flex:1.2 1 520px}
+@media (max-width:760px){ .hero-col-text,.hero-col-media{flex:0 1 auto} }
+
+/* Centre du fond radar/carte : derrière la galerie. Desktop = à droite (galerie
+   à droite) ; en colonne on le recentre et on le descend pour qu'il reste
+   derrière la galerie (passée en bas). */
+.hero-bg{--hx:70%;--hy:48%}
+@media (max-width:760px){ .hero-bg{--hx:50%;--hy:72%} }
 
 /* Helpers partagés (hero, pages) : breakpoint historique 760 conservé */
 @media (max-width:760px){ .hide-sm{display:none!important} .stack-sm{flex-direction:column!important;align-items:stretch!important} .only-sm{display:block} .tunnel-aside{margin-top:0} }
@@ -390,13 +425,17 @@ a.reset,button.reset{all:unset}
 .tag-modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
   padding:20px;background:rgba(10,22,40,.5);backdrop-filter:blur(4px);
   animation:tag-fade .2s ease both;overflow-y:auto}
+/* max-height : la modale ne dépasse jamais l'écran (le scroll de page est
+   verrouillé à l'ouverture). Le défilement du contenu se fait dans .tag-modal-grid,
+   ce qui laisse le bouton ✕ (absolute sur la modale) hors zone scrollable = toujours visible. */
 .tag-modal{position:relative;width:100%;max-width:720px;padding:0;overflow:hidden;
+  max-height:calc(100dvh - 40px);
   animation:tag-pop .28s cubic-bezier(.16,1,.3,1) both}
-.tag-modal-close{position:absolute;top:14px;right:14px;z-index:2;background:var(--surface-2);
+.tag-modal-close{position:absolute;top:14px;right:14px;z-index:3;background:var(--surface-2);
   border:1px solid var(--line);border-radius:999px;width:34px;height:34px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;color:var(--text);transition:background .16s ease}
 .tag-modal-close:hover{background:var(--bg-alt)}
-.tag-modal-grid{display:grid;grid-template-columns:.85fr 1fr}
+.tag-modal-grid{display:grid;grid-template-columns:.85fr 1fr;max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain}
 .tag-modal-art{display:flex;align-items:center;justify-content:center;padding:30px;
   background:linear-gradient(160deg,#E3EEFB,#F7FAFD);border-right:1px solid var(--line)}
 .tag-modal-art img{width:76%;max-width:220px;height:auto;
@@ -571,3 +610,30 @@ a.contact-info-line{text-decoration:none} a.contact-info-line:hover{color:var(--
   .contact-form-row{grid-template-columns:1fr}
   .contact-map iframe{height:320px}
 }
+
+/* ---- Bannière « Ajouter à l'écran d'accueil » ---- */
+.a2hs{position:fixed;z-index:80;left:16px;right:16px;bottom:16px;margin:0 auto;max-width:420px;
+  background:var(--card);border:1px solid var(--line-strong);border-radius:22px 22px 22px 0;
+  box-shadow:0 2px 4px rgba(16,42,73,.06), 0 30px 60px -24px rgba(16,42,73,.4);
+  padding:18px 18px 16px;animation:a2hs-in .38s cubic-bezier(.2,.9,.3,1) both}
+@keyframes a2hs-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.a2hs-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;
+  width:30px;height:30px;border-radius:999px;border:0;cursor:pointer;
+  background:transparent;color:var(--muted2)}
+.a2hs-close:hover{background:var(--bg-alt);color:var(--text)}
+.a2hs-head{display:flex;gap:13px;align-items:center;padding-right:26px}
+.a2hs-icon{flex:0 0 auto;display:grid;place-items:center;width:54px;height:54px;
+  border-radius:14px;background:var(--bg-alt);border:1px solid var(--line)}
+.a2hs-icon img{border-radius:10px}
+.a2hs-title{margin:0;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15.5px;color:var(--text)}
+.a2hs-sub{margin:3px 0 0;font-size:13.5px;line-height:1.45;color:var(--muted)}
+.a2hs-actions{display:flex;gap:9px;margin-top:14px}
+.a2hs-btn{flex:1;padding:11px 14px;font-size:14px;min-height:42px}
+.a2hs-steps{margin:13px 0 0;padding:0 0 0 6px;list-style:none;display:grid;gap:8px}
+.a2hs-steps li{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  font-size:13.5px;color:var(--muted);counter-increment:a2hs}
+.a2hs-steps li::before{content:counter(a2hs);display:grid;place-items:center;
+  width:20px;height:20px;border-radius:999px;background:var(--bg-alt);
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--primary)}
+.a2hs-steps strong{color:var(--text)}
+.a2hs-inline-ico{color:var(--primary);vertical-align:-2px}

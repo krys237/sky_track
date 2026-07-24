@@ -9,7 +9,7 @@ export const metadata = {
 
 // Coordonnées (mêmes valeurs que la page Support). Icône ronde + titre + lignes.
 const INFO = [
-  { icon: MapPin, title: "Où nous sommes", lines: [{ text: "Yaoundé · Cameroun" }, { text: "Livraison dans tout le pays" }] },
+  { icon: MapPin, title: "Où nous sommes", lines: [{ text: "Douala · Cameroun" }, { text: "Livraison dans tout le pays" }] },
   { icon: Mail, title: "Écrivez-nous", lines: [{ text: "hello@skytrack.cm", href: "mailto:hello@skytrack.cm" }, { text: "Réponse sous 24 h" }] },
   { icon: Phone, title: "Appelez / WhatsApp", lines: [{ text: "+237 640 759 203", href: "https://wa.me/237640759203" }, { text: "Lun–Sam, 8h–19h" }] },
 ] as const;
