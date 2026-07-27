@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, ArrowRight, Bluetooth, MapPin, RotateCcw, ChevronDown, MoveHorizontal,
 } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { Btn } from "@/components/ui";
 import { PhonePreview } from "./phones";
 import { SETUP_STEPS, resetSteps } from "./setup-guide";
@@ -87,6 +88,7 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
      Deux sens de synchronisation : l'étape active pousse le carrousel (défilement
      auto, clic sur une pastille) et le swipe de l'utilisateur remonte l'étape.
      `syncing` empêche le défilement programmé de se faire relire comme un swipe. */
+  const reduce = useReducedMotion();
   const narrow = useIsNarrow();
   const trackRef = useRef<HTMLDivElement>(null);
   /** Horodatage du dernier défilement que NOUS déclenchons, pour ne pas le relire comme un swipe. */
@@ -103,11 +105,8 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
     const target = active * el.clientWidth;
     if (Math.abs(el.scrollLeft - target) < 4) return;
     lastSync.current = Date.now();
-    // `behavior:"smooth"` est ignoré par Chrome sur un conteneur en
-    // scroll-snap mandatory : on positionne directement, le snap CSS gère le
-    // ressenti au doigt.
-    el.scrollTo({ left: target, behavior: "auto" });
-  }, [active, narrow, os]);
+    el.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
+  }, [active, narrow, os, reduce]);
 
   // Sens 2 — le swipe de l'utilisateur remonte l'étape (et coupe le défilement auto).
   // Deux détecteurs redondants (événement 'scroll' + IntersectionObserver) : ils
