@@ -1,23 +1,22 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft, ArrowRight, Bluetooth, MapPin, RotateCcw, ChevronDown, MoveHorizontal,
 } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { Btn } from "@/components/ui";
-import { PhonePreview } from "./phones";
+import { SetupScreenView } from "./phones";
 import { SETUP_STEPS, resetSteps } from "./setup-guide";
 import type { SetupProps } from "./shared";
 import type { OS } from "@/lib/types";
 
 /** Cadence de défilement automatique des écrans. */
-const CYCLE_MS = 2_600;
+const CYCLE_MS = 3_200;
 
 /**
- * Vrai sous 760px — même bascule que `.stack-sm`. Sert à choisir la mise en
- * page : deux colonnes sur PC, carrousel swipable sur mobile/tablette. On rend
- * l'une OU l'autre (pas de duplication du contenu dans le DOM). Départ à `false`
+ * Vrai sous 760px — même bascule que `.stack-sm`. Choisit la mise en page :
+ * deux colonnes sur PC, carrousel swipable sur mobile/tablette. Départ à `false`
  * pour que le rendu serveur corresponde au desktop.
  */
 function useIsNarrow() {
@@ -34,9 +33,8 @@ function useIsNarrow() {
 
 /**
  * Logo d'OS (Android/Apple) ou de réseau (Find Hub/Localiser), servi depuis
- * `public/os`. Les sources sont des JPG à fond blanc : `mix-blend-mode:multiply`
- * les fond dans le clair de l'UI sans détourage préalable. `zoom` recadre la
- * marge du visuel (nécessaire pour Find Hub, cerné de gris dans le fichier).
+ * `public/os`. Sources JPG à fond blanc : `mix-blend-mode:multiply` les fond
+ * dans le clair de l'UI ; `zoom` recadre la marge (cas Find Hub, cerné de gris).
  */
 function OsLogo({
   src, alt, size = 16, zoom = 1, fit = "contain",
@@ -61,14 +59,29 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
   const os: OS = flow.os || detectedOS || "android";
   const steps = SETUP_STEPS[os];
 
-  const [active, setActive] = useState(0);
-  /** Le défilement s'arrête dès que l'utilisateur choisit une étape lui-même. */
+  /* Piste unique : tous les écrans à plat, mais on retient à quelle étape et à
+     quel rang dans l'étape appartient chaque diapo. Un seul axe de navigation. */
+  const flat = useMemo(
+    () => steps.flatMap((s, si) => s.screens.map((sc, ci) => ({ si, ci, sc }))),
+    [steps],
+  );
+  const stepStart = useMemo(() => {
+    const out: number[] = [];
+    let n = 0;
+    steps.forEach((s, si) => { out[si] = n; n += s.screens.length; });
+    return out;
+  }, [steps]);
+
+  const [active, setActive] = useState(0); // index dans `flat`
   const [auto, setAuto] = useState(true);
   const [resetOpen, setResetOpen] = useState(false);
 
+  const activeStep = flat[active]?.si ?? 0;
+  const activeSub = flat[active]?.ci ?? 0;
+
   const setOS = (v: OS) => {
     setFlow((f) => ({ ...f, os: v }));
-    setActive(0); // les parcours n'ont pas les mêmes écrans
+    setActive(0);
   };
 
   useEffect(() => {
@@ -78,26 +91,23 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
 
   useEffect(() => {
     if (!auto) return;
-    const t = setInterval(() => setActive((x) => (x + 1) % steps.length), CYCLE_MS);
+    const t = setInterval(() => setActive((x) => (x + 1) % flat.length), CYCLE_MS);
     return () => clearInterval(t);
-  }, [auto, steps.length, os]);
+  }, [auto, flat.length, os]);
 
+  /** Sélectionne une diapo (clic pastille / point / liste) et coupe l'auto. */
   const pick = (i: number) => { setAuto(false); setActive(i); };
+  /** Saute au 1er écran d'une étape (clic sur le décompte). */
+  const gotoStep = (si: number) => pick(stepStart[si]);
 
-  /* ── Carrousel mobile ────────────────────────────────────────────────────
-     Deux sens de synchronisation : l'étape active pousse le carrousel (défilement
-     auto, clic sur une pastille) et le swipe de l'utilisateur remonte l'étape.
-     `syncing` empêche le défilement programmé de se faire relire comme un swipe. */
   const reduce = useReducedMotion();
   const narrow = useIsNarrow();
   const trackRef = useRef<HTMLDivElement>(null);
-  /** Horodatage du dernier défilement que NOUS déclenchons, pour ne pas le relire comme un swipe. */
   const lastSync = useRef(0);
   const activeRef = useRef(active);
   activeRef.current = active;
 
-  // Sens 1 — l'étape active pousse le carrousel. Les diapos font exactement
-  // 100% de la piste, donc la cible est déterministe : index × largeur.
+  // Sens 1 — la diapo active pousse le carrousel (cible déterministe : index × largeur).
   useEffect(() => {
     if (!narrow) return;
     const el = trackRef.current;
@@ -108,18 +118,16 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
     el.scrollTo({ left: target, behavior: reduce ? "auto" : "smooth" });
   }, [active, narrow, os, reduce]);
 
-  // Sens 2 — le swipe de l'utilisateur remonte l'étape (et coupe le défilement auto).
-  // Deux détecteurs redondants (événement 'scroll' + IntersectionObserver) : ils
-  // convergent vers le même index, donc en activer deux est sans effet de bord et
-  // met à l'abri d'un navigateur où l'un des deux se montre capricieux.
+  // Sens 2 — le swipe remonte la diapo active (et coupe l'auto). Deux détecteurs
+  // redondants (scroll + IntersectionObserver) pour tenir sur tout navigateur.
   useEffect(() => {
     if (!narrow) return;
     const el = trackRef.current;
     if (!el) return;
 
     const commit = (i: number) => {
-      if (Date.now() - lastSync.current < 700) return; // notre propre défilement
-      if (i >= 0 && i < steps.length && i !== activeRef.current) { setAuto(false); setActive(i); }
+      if (Date.now() - lastSync.current < 700) return;
+      if (i >= 0 && i < flat.length && i !== activeRef.current) { setAuto(false); setActive(i); }
     };
 
     let raf = 0;
@@ -148,9 +156,9 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
       cancelAnimationFrame(raf);
       io.disconnect();
     };
-  }, [narrow, steps.length, os]);
+  }, [narrow, flat.length, os]);
 
-  /* Blocs partagés par les deux mises en page (évite de dupliquer le JSX). */
+  /* ── Blocs partagés ─────────────────────────────────────────────────────── */
   const networkChip = (
     <div className="chip" style={{ marginBottom: 20 }}>
       {os === "ios" ? (
@@ -161,15 +169,34 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
     </div>
   );
 
-  const dots = (
-    <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12 }}>
-      {steps.map((s, d) => (
+  /* Décompte des étapes : gros repère d'avancement, cliquable pour sauter. */
+  const stepsRow = (
+    <div className="setup-steps-row" role="tablist" aria-label="Étapes de configuration">
+      {steps.map((s, si) => (
         <button
-          key={s.title}
+          key={si}
+          role="tab"
+          aria-selected={si === activeStep}
+          className={`setup-step-pill${si === activeStep ? " on" : ""}${si < activeStep ? " done" : ""}`}
+          onClick={() => gotoStep(si)}
+        >
+          <span className="setup-step-pill-num font-mono">{si + 1}</span>
+          <span className="setup-step-pill-label">{s.title}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  /* Points des sous-écrans de l'étape courante (n'apparaissent que si >1 écran). */
+  const subDots = steps[activeStep].screens.length > 1 && (
+    <div className="setup-subdots" aria-label={`Écran ${activeSub + 1} sur ${steps[activeStep].screens.length}`}>
+      {steps[activeStep].screens.map((_, ci) => (
+        <button
+          key={ci}
           className="reset"
-          onClick={() => pick(d)}
-          aria-label={`Étape ${d + 1} : ${s.title}`}
-          style={{ width: 7, height: 7, borderRadius: "50%", cursor: "pointer", background: d === active ? "var(--signal)" : "var(--line)" }}
+          onClick={() => pick(stepStart[activeStep] + ci)}
+          aria-label={`Écran ${ci + 1}`}
+          style={{ width: 7, height: 7, borderRadius: "50%", cursor: "pointer", background: ci === activeSub ? "var(--signal)" : "var(--line)" }}
         />
       ))}
     </div>
@@ -222,8 +249,7 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
         </button>
       </div>
 
-      {/* Prérequis : conditions à réunir avant de commencer, pas une étape du
-          parcours — d'où le bandeau plutôt qu'un numéro. */}
+      {/* Prérequis : conditions à réunir avant de commencer, pas une étape. */}
       <div className="card" style={{ padding: "10px 14px", marginBottom: 24, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
         <span className="muted2" style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: ".08em" }}>Avant de commencer</span>
         <span style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 13 }}>
@@ -234,71 +260,79 @@ export function StepSetup({ flow, setFlow, next, back, detectedOS }: SetupProps)
         </span>
       </div>
 
-      {narrow ? (
-        /* Mobile / tablette — carrousel : une diapo = un écran + sa consigne,
-           pour que le texte et le visuel restent solidaires pendant le swipe. */
-        <div>
-          {networkChip}
+      {networkChip}
+      {stepsRow}
 
+      {narrow ? (
+        /* Mobile / tablette — carrousel piste-unique : une diapo = un écran réel
+           + sa consigne, solidaires pendant le swipe. */
+        <div className="setup-narrow">
           <div
             className="setup-carousel"
             ref={trackRef}
             role="group"
-            aria-label="Étapes de configuration — faites défiler horizontalement"
+            aria-label="Écrans de configuration — faites défiler horizontalement"
           >
-            {steps.map((s, i) => (
-              <div className="setup-slide" key={s.title} aria-hidden={i !== active}>
-                <PhonePreview screen={s.screen} title={s.title} />
-                <div className="setup-slide-text">
-                  <span className="setup-step-num font-mono">{i + 1}</span>
-                  <span className="setup-step-txt" style={{ opacity: 1 }}>{s.text}</span>
-                </div>
+            {flat.map((f, i) => (
+              <div className="setup-slide" key={`${f.si}-${f.ci}`} aria-hidden={i !== active}>
+                <SetupScreenView screen={f.sc} />
+                <div className="setup-slide-text">{f.sc.caption}</div>
               </div>
             ))}
           </div>
 
-          {dots}
+          {subDots}
           <p className="setup-swipe-hint">
-            <MoveHorizontal size={13} /> Glissez pour voir l&apos;étape suivante
+            <MoveHorizontal size={13} /> Glissez pour l&apos;écran suivant
           </p>
-
-          {resetCard}
         </div>
       ) : (
-        /* PC — mise en page d'origine : guide à gauche, écran animé à droite. */
+        /* PC — deux colonnes : guide détaillé à gauche, écran actif à droite. */
         <div className="stack-sm" style={{ display: "flex", gap: 30, alignItems: "flex-start" }}>
           <div className="setup-guide-col">
-            {networkChip}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {steps.map((s, i) => {
-                const on = i === active;
-                return (
+            <div className="setup-steplist">
+              {steps.map((s, si) => (
+                <div className="setup-steplist-group" key={si}>
                   <button
-                    key={s.title}
-                    className={`setup-step ${on ? "on" : ""}`}
-                    onClick={() => pick(i)}
-                    aria-current={on}
+                    className={`setup-steplist-head${si === activeStep ? " on" : ""}`}
+                    onClick={() => gotoStep(si)}
+                    aria-current={si === activeStep}
                   >
-                    <span className="setup-step-num font-mono">{i + 1}</span>
-                    <span className="setup-step-txt">{s.text}</span>
+                    <span className="setup-step-num font-mono">{si + 1}</span>
+                    <span>{s.title}</span>
                   </button>
-                );
-              })}
+                  {si === activeStep && (
+                    <div className="setup-steplist-sub">
+                      {s.screens.map((sc, ci) => (
+                        <button
+                          key={ci}
+                          className={`setup-substep${stepStart[si] + ci === active ? " on" : ""}`}
+                          onClick={() => pick(stepStart[si] + ci)}
+                        >
+                          <span className="setup-substep-dot" />
+                          <span>{sc.caption}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
-            {/* Réinitialisation — dépannage, replié par défaut. */}
             {resetCard}
           </div>
 
           <div className="setup-phone-col">
-            <div style={{ textAlign: "center" }}>
-              <PhonePreview screen={steps[active].screen} title={steps[active].title} />
-              {dots}
+            <div style={{ textAlign: "center", width: "100%" }}>
+              <SetupScreenView screen={flat[active].sc} />
+              <div className="setup-slide-text setup-slide-text--center">{flat[active].sc.caption}</div>
+              {subDots}
             </div>
           </div>
         </div>
       )}
+
+      {narrow && resetCard}
 
       <div className="stack-sm" style={{ display: "flex", gap: 12, marginTop: 30 }}>
         <Btn variant="ghost" onClick={back}><ChevronLeft size={16} /> Retour</Btn>

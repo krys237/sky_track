@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
 import { InstallPrompt } from "./InstallPrompt";
+import { FindAppReminder } from "./FindAppReminder";
 
 /**
  * Habillage commun : la barre de navigation est présente partout ;
@@ -21,6 +22,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       {children}
       {!inTunnel && <Footer />}
       {!inTunnel && <InstallPrompt />}
+      {!inTunnel && <FindAppReminder />}
     </div>
   );
 }

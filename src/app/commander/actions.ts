@@ -5,18 +5,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getPaymentProvider, isMockPayments } from "@/lib/payments";
 import { finalizePayment } from "@/lib/payments/finalize";
-import { PACKS } from "@/lib/content";
-import type { ContactType, PackId, PayMethod } from "@/lib/types";
+import { PACKS, deliveryFeeFor, normalizeRefCode, isValidRefCode } from "@/lib/content";
+import type { ContactType, PackId, PayMethod, SaleMode } from "@/lib/types";
 
 export type StatutCommande = "initiee" | "payee" | "echouee" | "expediee" | "livree";
 
 export interface CreateOrderInput {
   pack: PackId;
+  /** Parcours de vente : conditionne l'adresse et les frais de livraison. */
+  mode: SaleMode;
   contactType: ContactType;
   contact: string;
   name: string;
   city: string;
   address: string;
+  /** Code de l'agent de terrain (requis en sur-place, sinon facultatif). */
+  refCode?: string | null;
   /** Moyen de paiement pressenti (informatif à ce stade). */
   pay?: PayMethod | null;
   /**
@@ -75,11 +79,17 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   if (!isPackId(input.pack)) return { ok: false, error: "Pack inconnu." };
   const name = (input.name || "").trim();
   const contact = (input.contact || "").trim();
-  const city = (input.city || "").trim();
-  const address = (input.address || "").trim();
   const idemKey = (input.idempotencyKey || "").trim();
-  if (!name || !contact || !city || !address) {
-    return { ok: false, error: "Coordonnées incomplètes." };
+
+  const mode: SaleMode = input.mode === "sur_place" ? "sur_place" : "livraison";
+  const isDelivery = mode === "livraison";
+  // Adresse : requise et conservée uniquement en livraison.
+  const city = isDelivery ? (input.city || "").trim() : "";
+  const address = isDelivery ? (input.address || "").trim() : "";
+
+  if (!name || !contact) return { ok: false, error: "Coordonnées incomplètes." };
+  if (isDelivery && (!city || !address)) {
+    return { ok: false, error: "Adresse de livraison incomplète." };
   }
   if (input.contactType !== "email" && input.contactType !== "whatsapp") {
     return { ok: false, error: "Type de contact invalide." };
@@ -88,7 +98,20 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     return { ok: false, error: "Requête invalide (clé de tentative)." };
   }
 
+  // Code agent : requis en sur-place, sinon facultatif ; format validé s'il est
+  // présent. Aucune vérification d'existence (pas encore de référentiel agents).
+  const refCode = input.refCode ? normalizeRefCode(input.refCode) : "";
+  if (refCode && !isValidRefCode(refCode)) {
+    return { ok: false, error: "Code agent invalide." };
+  }
+  if (!isDelivery && !refCode) {
+    return { ok: false, error: "Code agent requis pour une vente sur place." };
+  }
+
   const pack = PACKS.find((p) => p.id === input.pack)!;
+  // Montant recalculé côté serveur (anti-falsification) : produit + frais du mode.
+  const frais = deliveryFeeFor(mode);
+  const montant = pack.price + frais;
   let admin: ReturnType<typeof createAdminClient>;
   try {
     admin = createAdminClient();
@@ -112,8 +135,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     nom: name,
     contact_type: input.contactType,
     contact_value: contact,
-    ville: city,
-    adresse: address,
+    ville: isDelivery ? city : null,
+    adresse: isDelivery ? address : null,
   };
 
   // 0. Cette tentative a-t-elle déjà abouti ? ---------------------------------
@@ -146,7 +169,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         .update({
           pack: pack.id,
           quantite: pack.cards,
-          montant: pack.price,
+          montant,
+          mode,
+          frais_livraison: frais,
+          code_referent: refCode || null,
           moyen_paiement: input.pay ?? null,
         })
         .eq("id", existing.id);
@@ -199,9 +225,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         client_id: client.id,
         pack: pack.id,
         quantite: pack.cards,
-        montant: pack.price,
+        montant,
         devise: "XAF",
         statut: "initiee",
+        mode,
+        frais_livraison: frais,
+        code_referent: refCode || null,
         moyen_paiement: input.pay ?? null,
         idempotency_key: idemKey,
       })

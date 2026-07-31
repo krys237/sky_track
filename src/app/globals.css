@@ -133,26 +133,108 @@ a.reset,button.reset{all:unset}
 .setup-toggle{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;
   width:100%;padding:13px 15px;cursor:pointer;text-align:left}
 
-/* Étape « Configuration » : guide à gauche, maquette de téléphone à droite. */
-.setup-guide-col{flex:1 1 380px;min-width:0}
-.setup-phone-col{flex:0 0 auto;display:flex;justify-content:center;width:100%;max-width:260px;margin:0 auto}
+/* ===== Étape « Configuration » — guide à écrans réels (piste unique groupée) =====
+   Captures réelles plein-cadre (coque incluse) + repère de tap sur le bouton.
+   Un seul axe de navigation : le décompte d'étapes avance, des points marquent
+   le sous-écran. Desktop = liste détaillée à gauche + écran à droite ; mobile =
+   carrousel swipable (scroll-snap natif). */
+.setup-guide-col{flex:1 1 340px;min-width:0}
+.setup-phone-col{flex:0 0 auto;display:flex;justify-content:center;width:100%;max-width:290px;margin:0 auto}
 
-/* Téléphone / tablette : la colonne passerait SOUS toute la liste d'étapes —
-   on lirait les consignes sans jamais voir l'écran s'animer. On bascule donc en
-   carrousel : une diapo = un écran + son texte, solidaires, qu'on fait défiler
-   au doigt (scroll-snap natif, aucune dépendance).
-   NB : une variante « image épinglée » était impossible ici, .sky-root porte
-   overflow-x:hidden, ce qui neutralise position:sticky sur tout le site. */
+/* Décompte des étapes — repère d'avancement cliquable */
+.setup-steps-row{display:flex;gap:5px;margin-bottom:18px}
+.setup-step-pill{all:unset;box-sizing:border-box;flex:1 1 0;min-width:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 2px 8px;
+  border-radius:12px;border:1px solid var(--line);background:var(--card);text-align:center;
+  transition:background .16s ease,border-color .16s ease}
+.setup-step-pill:hover{background:var(--surface-2)}
+.setup-step-pill-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:700;background:var(--bg-alt);color:var(--muted);
+  border:1px solid var(--line-strong);transition:background .16s,color .16s,border-color .16s}
+.setup-step-pill-label{font-size:10.5px;font-weight:600;color:var(--muted);line-height:1.15;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.setup-step-pill.done .setup-step-pill-num{background:rgba(5,150,105,.14);color:var(--signal);border-color:rgba(5,150,105,.35)}
+.setup-step-pill.on{border-color:rgba(5,150,105,.5);background:rgba(5,150,105,.06)}
+.setup-step-pill.on .setup-step-pill-num{background:var(--signal);color:#fff;border-color:transparent}
+.setup-step-pill.on .setup-step-pill-label{color:var(--text)}
+
+/* Écran — capture réelle plein-cadre. .setup-shot-inner épouse l'image
+   (hauteur 100 %, largeur auto) → les % du repère de tap = % de l'image. */
+.setup-shot{display:flex;justify-content:center;width:100%;height:clamp(360px,54vh,480px)}
+.setup-shot-inner{position:relative;height:100%;display:inline-flex}
+.setup-shot-img{height:100%;width:auto;max-width:100%;display:block;object-fit:contain;
+  border-radius:16px;user-select:none;-webkit-user-drag:none}
+.setup-shot--node .setup-shot-inner{width:min(300px,86vw)}
+
+/* Repère de tap animé sur le bouton à toucher */
+.setup-tap{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:2;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.setup-tap-dot{position:absolute;width:16px;height:16px;border-radius:50%;background:rgba(5,150,105,.92);
+  box-shadow:0 0 0 4px rgba(5,150,105,.28),0 2px 8px rgba(16,42,73,.4)}
+.setup-tap-ring{position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid var(--signal);
+  animation:setup-ping 1.9s ease-out infinite}
+@keyframes setup-ping{0%{transform:scale(1);opacity:.85}80%,100%{transform:scale(2.7);opacity:0}}
+.setup-tap-label{position:absolute;left:calc(100% - 3px);top:50%;transform:translateY(-50%);white-space:nowrap;
+  font-size:11px;font-weight:700;font-style:normal;color:#fff;background:var(--signal);
+  padding:3px 8px;border-radius:999px;box-shadow:0 4px 12px -4px rgba(5,150,105,.7)}
+
+/* Écran d'allumage — les deux produits physiques */
+.setup-poweron{height:100%;display:flex;flex-direction:column;gap:12px;justify-content:center;align-items:center;
+  padding:20px 16px;border-radius:18px;background:linear-gradient(165deg,var(--surface-2),var(--bg-alt));
+  border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.setup-poweron-badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.setup-poweron-grid{display:flex;gap:16px;align-items:flex-end;justify-content:center;flex:1;min-height:0}
+.setup-poweron-item{margin:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px}
+.setup-poweron-img{height:min(184px,32vh);width:auto;filter:drop-shadow(0 18px 30px rgba(16,42,73,.3))}
+.setup-poweron-item figcaption{font-size:12.5px;font-weight:600;color:var(--muted)}
+.setup-poweron-btn{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  width:13px;height:13px;border-radius:50%;background:rgba(5,150,105,.92);
+  box-shadow:0 0 0 4px rgba(5,150,105,.28);animation:setup-ping-solid 1.9s ease-out infinite}
+.setup-poweron-btn--rond{top:46%}
+@keyframes setup-ping-solid{0%{box-shadow:0 0 0 0 rgba(5,150,105,.4)}80%,100%{box-shadow:0 0 0 13px rgba(5,150,105,0)}}
+
+/* Consigne sous l'écran */
+.setup-slide-text{width:100%;max-width:430px;margin:0 auto;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:14px;padding:12px 15px;
+  font-size:14px;line-height:1.5;color:var(--text);box-shadow:0 1px 2px rgba(16,42,73,.05)}
+.setup-slide-text--center{text-align:center;margin-top:14px}
+.setup-slide-text b{font-weight:700}
+
+/* Points des sous-écrans de l'étape */
+.setup-subdots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+
+/* Liste desktop : étapes + sous-écrans dépliés pour l'étape active */
+.setup-steplist{display:flex;flex-direction:column;gap:4px}
+.setup-steplist-head{all:unset;box-sizing:border-box;display:flex;gap:12px;align-items:center;width:100%;
+  padding:9px 11px;border-radius:11px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);transition:background .16s}
+.setup-steplist-head:hover{background:var(--surface-2)}
+.setup-steplist-head.on{background:rgba(5,150,105,.07)}
+.setup-steplist-head .setup-step-num{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.3);color:var(--signal)}
+.setup-steplist-head.on .setup-step-num{background:var(--signal);border-color:var(--signal);color:#fff}
+.setup-steplist-sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 8px 40px;
+  border-left:1px solid var(--line);padding-left:8px}
+.setup-substep{all:unset;box-sizing:border-box;display:flex;gap:9px;align-items:flex-start;width:100%;
+  padding:7px 9px;border-radius:9px;cursor:pointer;font-size:13px;line-height:1.45;color:var(--muted);transition:background .16s,color .16s}
+.setup-substep:hover{background:var(--surface-2);color:var(--text)}
+.setup-substep.on{color:var(--text);font-weight:500}
+.setup-substep-dot{flex:0 0 auto;width:8px;height:8px;margin-top:5px;border-radius:50%;background:var(--line-strong)}
+.setup-substep.on .setup-substep-dot{background:var(--signal)}
+
+/* Carrousel mobile */
 .setup-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
   overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .setup-carousel::-webkit-scrollbar{display:none}
 .setup-slide{flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;
-  align-items:center;gap:14px;padding-top:4px}
-.setup-slide-text{display:flex;gap:12px;align-items:flex-start;width:100%;max-width:430px;
-  background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:13px 15px;
-  box-shadow:0 1px 2px rgba(16,42,73,.05)}
+  align-items:center;gap:14px;padding:2px 2px 0}
 .setup-swipe-hint{display:flex;align-items:center;justify-content:center;gap:7px;
   margin-top:12px;font-size:12px;color:var(--muted2)}
+
+@media (prefers-reduced-motion: reduce){
+  .setup-tap-ring,.setup-poweron-btn{animation:none}
+}
 
 /* phone mockup (tunnel — download step) */
 .phone{width:230px;max-width:74vw;border-radius:30px;padding:11px;background:linear-gradient(160deg,#1b2b3d,#0f1a28);
@@ -629,6 +711,7 @@ a.contact-info-line{text-decoration:none} a.contact-info-line:hover{color:var(--
 .a2hs-sub{margin:3px 0 0;font-size:13.5px;line-height:1.45;color:var(--muted)}
 .a2hs-actions{display:flex;gap:9px;margin-top:14px}
 .a2hs-btn{flex:1;padding:11px 14px;font-size:14px;min-height:42px}
+a.a2hs-btn{text-decoration:none}
 .a2hs-steps{margin:13px 0 0;padding:0 0 0 6px;list-style:none;display:grid;gap:8px}
 .a2hs-steps li{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
   font-size:13.5px;color:var(--muted);counter-increment:a2hs}

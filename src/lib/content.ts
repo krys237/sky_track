@@ -1,11 +1,37 @@
 import {
   WalletCards, ScrollText, Luggage, HeartHandshake, Radio, Signal, MapPin, Volume2, Share2,
-  Lock, Shield, Nfc, Battery, Droplets, Ruler, Smartphone, CreditCard,
+  Lock, Shield, Nfc, Battery, Droplets, Ruler, Smartphone, CreditCard, Zap, BatteryCharging,
 } from "lucide-react";
-import type { Pack, IconItem, Step, FaqItem, TagProduct } from "./types";
+import type { Pack, IconItem, Step, FaqItem, TagProduct, SaleMode } from "./types";
 
 export const fcfa = (n: number): string =>
   n.toLocaleString("fr-FR").replace(/ /g, " ") + " FCFA";
+
+// Frais de livraison — tarif unique, ajouté au total en mode « livraison ». Une
+// seule source de vérité : le montant à payer est TOUJOURS recalculé côté
+// serveur à partir d'ici (le navigateur n'envoie aucun montant, cf. createOrder).
+export const DELIVERY_FEE = 2000;
+
+/** Frais applicables au mode choisi (0 en sur-place). */
+export const deliveryFeeFor = (mode: SaleMode): number =>
+  mode === "livraison" ? DELIVERY_FEE : 0;
+
+/** Total à débiter = prix produit + frais du mode. */
+export const orderTotal = (packPrice: number, mode: SaleMode): number =>
+  packPrice + deliveryFeeFor(mode);
+
+// Code agent de terrain : format « AG-XXXX » (2+ caractères alphanumériques
+// après le tiret). Validation de FORME seulement — il n'existe pas encore de
+// référentiel d'agents à interroger.
+const REF_CODE_RE = /^AG-[A-Z0-9]{2,}$/;
+
+/** Normalise un code référent saisi (espaces retirés, majuscules). */
+export const normalizeRefCode = (raw: string): string =>
+  raw.trim().toUpperCase().replace(/\s+/g, "");
+
+/** Le code a-t-il un format d'agent plausible ? */
+export const isValidRefCode = (raw: string): boolean =>
+  REF_CODE_RE.test(normalizeRefCode(raw));
 
 export const BENEFITS: IconItem[] = [
   { icon: WalletCards, t: "Portefeuille & CNI", d: "Glissez la carte entre vos cartes bancaires. Retrouvez votre portefeuille en un instant." },
@@ -62,15 +88,35 @@ export const TAG_PRODUCTS: TagProduct[] = [
       { icon: CreditCard, label: "Épaisseur", value: "1,8 mm · format carte bancaire" },
     ],
   },
+  {
+    // Accessoire, pas un traceur : aucune spec réseau / Bluetooth / OS. Le contenu
+    // est dérivé de la spec déjà publiée de la Carte (« recharge sans fil Qi ») —
+    // rien d'inventé. Image et détails techniques (entrée, câble) à confirmer.
+    id: "chargeur",
+    name: "Chargeur",
+    tagline: "Le socle de recharge sans fil de votre Carte SkyTrack.",
+    image: "/chargeur.png", // TODO: image fournie par le client
+    usage: "Recharge de la Carte SkyTrack",
+    highlights: [
+      "Recharge sans fil (Qi) : posez la Carte, elle se recharge",
+      "Conçu pour la Carte SkyTrack rechargeable",
+      "Une charge = 3 à 6 mois d'autonomie",
+    ],
+    specs: [
+      { icon: Zap, label: "Type", value: "Recharge sans fil (Qi)" },
+      { icon: CreditCard, label: "Compatible", value: "Carte SkyTrack" },
+      { icon: BatteryCharging, label: "Autonomie par charge", value: "3 à 6 mois" },
+    ],
+  },
 ];
 
-// Options d'achat de la page d'accueil = 1 par produit (Carte / Tag rond).
-// PRIX confirmés : Carte (rectangle) 14 900 F · Tag rond 9 900 F. Le modèle de
-// commande (PackId) et la BD restent inchangés : « Commander » entre dans le
-// tunnel existant. Voir JOURNAL.md.
+// Options d'achat de la page d'accueil = 1 par produit (Carte / Tag rond /
+// Chargeur). PRIX confirmés : Carte 14 900 F · Tag rond 9 900 F · Chargeur
+// 4 500 F. « Commander » entre dans le tunnel existant. Voir JOURNAL.md.
 export const PACK_OPTIONS: { productId: TagProduct["id"]; price: number; best?: boolean }[] = [
   { productId: "carte", price: 14900, best: true },
   { productId: "rond", price: 9900 },
+  { productId: "chargeur", price: 4500 },
 ];
 
 // Le tunnel de commande vend exactement les mêmes 2 produits que la page

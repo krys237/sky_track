@@ -12,12 +12,12 @@ const MAX_QTY = 5;
 
 export function PackOptions({ onOrder }: { onOrder: (id: PackId) => void }) {
   // Quantité par produit — présentielle pour l'instant (non transmise à la commande, cf JOURNAL.md)
-  const [qty, setQty] = React.useState<Record<string, number>>({ carte: 1, rond: 1 });
+  const [qty, setQty] = React.useState<Record<string, number>>({ carte: 1, rond: 1, chargeur: 1 });
   const step = (id: string, d: number) =>
     setQty((q) => ({ ...q, [id]: Math.min(MAX_QTY, Math.max(MIN_QTY, (q[id] ?? 1) + d)) }));
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, maxWidth: 760, margin: "0 auto" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, maxWidth: 1140, margin: "0 auto" }}>
       {PACK_OPTIONS.map((opt) => {
         const p = TAG_PRODUCTS.find((t) => t.id === opt.productId)!;
         const q = qty[opt.productId] ?? 1;

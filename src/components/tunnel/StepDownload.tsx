@@ -31,7 +31,7 @@ function AppleGlyph({ size = 24, color = "currentColor" }: { size?: number; colo
  * — Android : « Localiser de Google » / Find Hub (package com.google.android.apps.adm)
  * — iPhone  : « Localiser » d'Apple / Find My (id1514844621)
  */
-const STORE_URLS = {
+export const STORE_URLS = {
   play: "https://play.google.com/store/apps/details?id=com.google.android.apps.adm",
   apple: "https://apps.apple.com/fr/app/localiser/id1514844621",
 } as const;

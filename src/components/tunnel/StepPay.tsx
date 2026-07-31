@@ -2,17 +2,18 @@
 
 import React, { useRef, useState } from "react";
 import {
-  Loader, X, Shield, ChevronLeft, ArrowRight, Clock, RefreshCw,
+  Loader, X, Shield, ChevronLeft, ArrowRight, Clock, RefreshCw, UserCheck,
 } from "lucide-react";
 import { Btn } from "@/components/ui";
 import { PhoneField } from "@/components/PhoneField";
 import { Summary } from "./Summary";
-import { PACKS, fcfa } from "@/lib/content";
+import { PACKS, fcfa, orderTotal, normalizeRefCode, isValidRefCode } from "@/lib/content";
 import {
   createOrder, initiatePayment, confirmMockPayment, getOrderStatus,
 } from "@/app/commander/actions";
 import type { StepProps } from "./shared";
 import type { PayMethod } from "@/lib/types";
+import { markPaidOnDevice } from "@/lib/findapp";
 
 /** `unknown` : issue non tranchée — surtout pas présentée comme un échec. */
 type Phase = "form" | "pending" | "error" | "unknown";
@@ -45,6 +46,15 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [momoNum, setMomoNum] = useState("");
   const [card, setCard] = useState({ num: "", exp: "", cvv: "", name: "" });
+  // Code de l'agent de terrain. Pré-rempli si le client est arrivé via un lien
+  // agent (?ref=…). Obligatoire en sur-place (c'est la vente de l'agent),
+  // facultatif en livraison.
+  const [refCode, setRefCode] = useState(flow.refCode ?? "");
+
+  const total = orderTotal(pack.price, flow.mode);
+  const refRequired = flow.mode === "sur_place";
+  const refFilled = refCode.trim() !== "";
+  const refOk = refRequired ? isValidRefCode(refCode) : (!refFilled || isValidRefCode(refCode));
 
   const methods: { id: PayMethod; label: string; sub: string; img: string }[] = [
     { id: "momo", label: "MTN MoMo", sub: "Mobile Money", img: "/payments/mtn-mobile-money.jpg" },
@@ -103,6 +113,7 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
       failDefinitive("La transaction a été annulée ou le solde est insuffisant.");
       return;
     }
+    markPaidOnDevice(); // cet appareil a payé → alimente le rappel « app de suivi »
     next(); // payee (ou déjà expediee/livree)
   };
 
@@ -112,17 +123,18 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
 
     // 1. Persiste la commande (client + commande, statut « initiee »).
     //    Idempotent : un réessai après timeout retombe sur la même commande.
+    const normalizedRef = refFilled ? normalizeRefCode(refCode) : null;
     const order = await createOrder({
-      pack: flow.pack, contactType: flow.contactType, contact: flow.contact,
+      pack: flow.pack, mode: flow.mode, contactType: flow.contactType, contact: flow.contact,
       name: flow.name, city: flow.city, address: flow.address, pay: method,
-      idempotencyKey: attemptKey(),
+      refCode: normalizedRef, idempotencyKey: attemptKey(),
     });
     if (!order.ok || !order.commandeId || !order.ref) {
       failRetryable(order.error || "Impossible d'enregistrer la commande.");
       return;
     }
     const commandeId = order.commandeId;
-    setFlow((f) => ({ ...f, pay: method, orderRef: order.ref!, commandeId }));
+    setFlow((f) => ({ ...f, pay: method, refCode: normalizedRef, orderRef: order.ref!, commandeId }));
 
     // La tentative précédente avait en fait abouti (réponse perdue en route) :
     // on reprend le parcours à son état réel plutôt que d'encaisser deux fois.
@@ -225,6 +237,27 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
             </div>
           ) : (
             <>
+              {/* Code agent — attribution de la vente à un vendeur de terrain. */}
+              <div style={{ marginBottom: 20 }}>
+                <label className="fld" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <UserCheck size={14} /> Code agent {refRequired ? "(obligatoire)" : "(optionnel)"}
+                </label>
+                <input
+                  value={refCode}
+                  onChange={(e) => setRefCode(e.target.value.toUpperCase())}
+                  placeholder="AG-1234"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                />
+                {refFilled && !isValidRefCode(refCode) ? (
+                  <p style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>Format attendu : AG- suivi de chiffres ou lettres (ex. AG-1234).</p>
+                ) : (
+                  <p className="muted2" style={{ fontSize: 12, marginTop: 6 }}>
+                    {refRequired ? "Renseigné par l'agent qui réalise la vente." : "Si un agent vous a orienté, indiquez son code."}
+                  </p>
+                )}
+              </div>
+
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
                 {methods.map((m) => (
                   <div key={m.id} className={`rowsel ${method === m.id ? "sel" : ""}`} onClick={() => { setMethod(m.id); setPhase("form"); }}>
@@ -281,8 +314,8 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
 
               <div className="stack-sm" style={{ display: "flex", gap: 12, marginTop: 20 }}>
                 <Btn variant="ghost" onClick={back}><ChevronLeft size={16} /> Retour</Btn>
-                <Btn variant="primary" onClick={pay} disabled={!canPay()}>
-                  {phase === "error" ? "Réessayer" : `Payer ${fcfa(pack.price)}`} <ArrowRight size={16} />
+                <Btn variant="primary" onClick={pay} disabled={!canPay() || !refOk}>
+                  {phase === "error" ? "Réessayer" : `Payer ${fcfa(total)}`} <ArrowRight size={16} />
                 </Btn>
               </div>
             </>

@@ -9,11 +9,17 @@ import { StepPay } from "@/components/tunnel/StepPay";
 import { StepConfirm } from "@/components/tunnel/StepConfirm";
 import { StepSetup } from "@/components/tunnel/StepSetup";
 import { StepDownload } from "@/components/tunnel/StepDownload";
-import { PACKS } from "@/lib/content";
-import type { Flow, OS, PackId } from "@/lib/types";
+import { PACKS, normalizeRefCode } from "@/lib/content";
+import type { Flow, OS, PackId, SaleMode } from "@/lib/types";
 
 function isPackId(v: string | null): v is PackId {
   return !!v && PACKS.some((p) => p.id === v);
+}
+
+// Le lien qu'un agent ouvre sur le téléphone du client peut pré-remplir le mode
+// (« sur-place ») et son code (« ?ref=AG-1234 ») : /commander?mode=sur-place&ref=AG-1234&pack=carte
+function parseMode(v: string | null): SaleMode {
+  return v === "sur-place" || v === "sur_place" ? "sur_place" : "livraison";
 }
 
 function Onboarding() {
@@ -23,13 +29,16 @@ function Onboarding() {
   // Produit pré-sélectionné via l'URL (?pack=carte) → on démarre à l'étape « Compte ».
   const presetPack = searchParams.get("pack");
   const initialPack: PackId = isPackId(presetPack) ? presetPack : "carte";
+  const initialMode = parseMode(searchParams.get("mode"));
+  const presetRef = searchParams.get("ref");
   const initialStep = useMemo(() => (isPackId(presetPack) ? 1 : 0), [presetPack]);
 
   const [step, setStep] = useState(initialStep);
   const [detectedOS, setDetectedOS] = useState<OS | null>(null);
   const [flow, setFlow] = useState<Flow>({
-    pack: initialPack, contactType: "email", contact: "", name: "", city: "", address: "",
-    pay: null, os: null, orderRef: null, commandeId: null,
+    pack: initialPack, mode: initialMode, contactType: "email", contact: "", name: "", city: "", address: "",
+    pay: null, refCode: presetRef ? normalizeRefCode(presetRef) : null,
+    os: null, orderRef: null, commandeId: null,
   });
 
   useEffect(() => {

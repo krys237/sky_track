@@ -1,7 +1,7 @@
 import type { PackId } from "./types";
 
 /** Clés logiques de page (héritées du prototype) → chemins réels Next. */
-export type PageKey = "home" | "how" | "products" | "faq" | "support" | "contact";
+export type PageKey = "home" | "how" | "products" | "faq" | "support" | "contact" | "guide";
 
 export const PAGE_TO_PATH: Record<PageKey, string> = {
   home: "/",
@@ -12,6 +12,8 @@ export const PAGE_TO_PATH: Record<PageKey, string> = {
   faq: "/faq",
   support: "/support",
   contact: "/contact",
+  // Guide de configuration en accès direct (hors tunnel d'achat).
+  guide: "/configuration",
 };
 
 export const NAV_ITEMS: [PageKey, string][] = [
@@ -21,6 +23,7 @@ export const NAV_ITEMS: [PageKey, string][] = [
   ["faq", "FAQ"],
   ["support", "Support"],
   ["contact", "Contact"],
+  ["guide", "Configuration"],
 ];
 
 /** Chemin → clé de page active (pour surligner la navigation).
@@ -30,6 +33,7 @@ export function pathToPage(pathname: string): PageKey | null {
   if (pathname.startsWith("/faq")) return "faq";
   if (pathname.startsWith("/support")) return "support";
   if (pathname.startsWith("/contact")) return "contact";
+  if (pathname.startsWith("/configuration")) return "guide";
   return null;
 }
 

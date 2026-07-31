@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { PACKS, TAG_PRODUCTS, fcfa } from "@/lib/content";
+import { PACKS, TAG_PRODUCTS, fcfa, deliveryFeeFor, orderTotal } from "@/lib/content";
 import type { Flow } from "@/lib/types";
 
 export function Summary({ flow }: { flow: Flow }) {
@@ -29,9 +29,21 @@ export function Summary({ flow }: { flow: Flow }) {
           <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{pack.cards} unité{pack.cards > 1 ? "s" : ""}</div>
         </div>
       </div>
-      <div style={{ borderTop: "1px solid var(--line)", margin: "14px 0", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span className="muted" style={{ fontSize: 14 }}>Total</span>
-        <span className="font-display" style={{ fontSize: 22, fontWeight: 700 }}>{fcfa(pack.price)}</span>
+      <div style={{ borderTop: "1px solid var(--line)", margin: "14px 0 0", paddingTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span className="muted" style={{ fontSize: 13.5 }}>Sous-total</span>
+          <span style={{ fontSize: 14 }}>{fcfa(pack.price)}</span>
+        </div>
+        {deliveryFeeFor(flow.mode) > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span className="muted" style={{ fontSize: 13.5 }}>Frais de livraison</span>
+            <span style={{ fontSize: 14 }}>{fcfa(deliveryFeeFor(flow.mode))}</span>
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: "1px solid var(--line)", paddingTop: 10, marginTop: 2 }}>
+          <span className="muted" style={{ fontSize: 14 }}>Total</span>
+          <span className="font-display" style={{ fontSize: 22, fontWeight: 700 }}>{fcfa(orderTotal(pack.price, flow.mode))}</span>
+        </div>
       </div>
       {flow.contact && <div className="muted2" style={{ fontSize: 12, marginTop: 6 }}>Contact : {flow.contact}</div>}
     </div>

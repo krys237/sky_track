@@ -1,243 +1,156 @@
 "use client";
 
 import React from "react";
-import { Signal, Wallet, Check, MapPin, Plus, Compass } from "lucide-react";
+import { Signal } from "lucide-react";
+import { TransparentImage } from "@/components/ui";
 import type { OS } from "@/lib/types";
 
 /**
- * Source unique du parcours de configuration : chaque étape porte **à la fois**
- * son texte et l'écran de téléphone qui l'illustre.
+ * Source unique du parcours de configuration. Chaque étape porte une SÉQUENCE
+ * d'écrans (captures réelles de Localiser / Find Hub), chacun avec sa consigne
+ * et un repère de tap posé sur le bouton à toucher. Les captures incluent déjà
+ * la coque du téléphone → on ne les remet pas dans une maquette.
  *
- * Auparavant, `StepSetup` tenait deux tableaux de textes et `phones.tsx` deux
- * tableaux d'écrans — quatre listes parallèles indexées à la main, qui
- * pouvaient diverger sans que rien ne le signale. Ici, ajouter ou retirer une
- * étape met à jour texte, visuel et pastilles de navigation d'un seul geste.
- *
- * Contenu repris du « Guide d'utilisation simple — Carte Finder » (manuel
- * fabricant), complété des écrans réels de Find Hub et de Localiser.
+ * Un seul écran fait exception : l'allumage de la carte (geste physique, pas un
+ * écran d'app) est dessiné en code et montre les deux produits réels.
  */
-export interface SetupStep {
-  /** Libellé court affiché sous le téléphone. */
-  title: string;
-  /** Consigne affichée dans la liste numérotée. */
-  text: React.ReactNode;
-  screen: React.ReactNode;
+
+/** Repère de tap animé, en % de l'image (0-100). `label` = texte à côté du repère. */
+export interface TapHint {
+  x: number;
+  y: number;
+  label?: string;
 }
 
-/* ── Écrans partagés ─────────────────────────────────────────────────────── */
+export interface SetupScreen {
+  /** Capture plein-cadre (coque incluse), servie depuis /public/setup. */
+  img?: string;
+  /** Écran dessiné en code (allumage) — alternative à `img`. */
+  node?: React.ReactNode;
+  /** Consigne courte, affichée sous l'écran. */
+  caption: React.ReactNode;
+  /** Repère de tap sur le bouton clé (absent sur les écrans « vitrine »). */
+  hint?: TapHint;
+  /** Texte alternatif de l'image (accessibilité). */
+  alt?: string;
+}
 
-/** Allumage de la carte : identique sur les deux plateformes. */
-const cardPressScreen = (
-  <div className="ph-body" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-    <div className="thecard" style={{ transform: "scale(1.1)", marginBottom: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <Signal size={12} style={{ color: "var(--signal)" }} />
-        <span className="pulse-dot" />
-      </div>
-      <div className="font-mono" style={{ fontSize: 8, color: "rgba(255,255,255,.62)" }}>SKYTRACK · CARD</div>
+export interface SetupStep {
+  /** Libellé court de l'étape (décompte + liste). */
+  title: string;
+  screens: SetupScreen[];
+}
+
+/* ── Écran d'allumage : les deux produits physiques + repère « bouton » ─────── */
+const powerOnScreen = (
+  <div className="setup-poweron">
+    <div className="setup-poweron-badge">
+      <Signal size={13} style={{ color: "var(--signal)" }} /> Votre matériel SkyTrack
     </div>
-    <div style={{ fontSize: 13, fontWeight: 600 }}>Appuyez sur le bouton</div>
-    <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>un bip confirme l&apos;allumage</div>
+    <div className="setup-poweron-grid">
+      <figure className="setup-poweron-item">
+        <TransparentImage src="/tag-carte.jpeg" alt="Carte SkyTrack" className="setup-poweron-img" />
+        <span className="setup-poweron-btn" aria-hidden />
+        <figcaption>Carte</figcaption>
+      </figure>
+      <figure className="setup-poweron-item">
+        <TransparentImage src="/tag-rond.png" alt="Tag rond SkyTrack" className="setup-poweron-img" />
+        <span className="setup-poweron-btn setup-poweron-btn--rond" aria-hidden />
+        <figcaption>Tag rond</figcaption>
+      </figure>
+    </div>
   </div>
 );
 
-/* ── Android ─────────────────────────────────────────────────────────────── */
+const powerOnStep: SetupStep = {
+  title: "Allumer",
+  screens: [
+    {
+      node: powerOnScreen,
+      caption: (
+        <>Appuyez une fois sur le bouton du produit — ou maintenez-le <b>3 secondes</b> selon
+        le modèle. <b>Un bip</b> confirme l&apos;allumage.</>
+      ),
+    },
+  ],
+};
 
+/* ── Android — Find Hub ─────────────────────────────────────────────────────── */
 const ANDROID: SetupStep[] = [
   {
-    title: "Application",
-    text: (
-      <>Ouvrez <b>Find Hub</b> (anciennement « Localiser mon appareil »), déjà présent sur
-      Android. Mettez-le à jour depuis le Play Store si nécessaire.</>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 12 }}>Google Play</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", padding: 11, borderRadius: 10, border: "1px solid var(--line)", marginBottom: "auto" }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(37,99,235,.12)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
-            <Compass size={18} style={{ color: "var(--primary)" }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>Find Hub</div>
-            <div className="muted" style={{ fontSize: 10.5 }}>Google LLC</div>
-          </div>
-        </div>
-        <div style={{ background: "linear-gradient(96deg,var(--primary),var(--primary-dim))", color: "#fff", textAlign: "center", padding: 9, borderRadius: 9, fontSize: 12, fontWeight: 700 }}>Ouvrir</div>
-      </div>
-    ),
+    title: "Installer",
+    screens: [
+      { img: "/setup/android/01-playstore.png", alt: "Fiche Find Hub sur le Play Store", caption: <>Installez <b>Find Hub</b> depuis le Play&nbsp;Store.</>, hint: { x: 68, y: 17, label: "Installer" } },
+      { img: "/setup/android/02-home.png", alt: "Icône Find Hub sur l'écran d'accueil", caption: <>Ouvrez <b>Find Hub</b> depuis votre écran d&apos;accueil.</>, hint: { x: 40, y: 27, label: "Find Hub" } },
+      { img: "/setup/android/03-location.png", alt: "Autorisation de localisation", caption: <>Autorisez Find Hub à accéder à la <b>position</b>.</>, hint: { x: 65, y: 52 } },
+      { img: "/setup/android/04-bluetooth.png", alt: "Activation du Bluetooth", caption: <>Vérifiez que le <b>Bluetooth</b> est activé.</>, hint: { x: 74, y: 25 } },
+    ],
+  },
+  powerOnStep,
+  {
+    title: "Connecter",
+    screens: [
+      { img: "/setup/android/05-detecte.png", alt: "La carte détectée à proximité", caption: <>La carte apparaît « <b>à proximité</b> » dans la liste.</>, hint: { x: 34, y: 45 } },
+      { img: "/setup/android/06-connecter.png", alt: "Pop-up de connexion Smart Card", caption: <>Touchez « <b>Connecter</b> » pour l&apos;associer.</>, hint: { x: 75, y: 89 } },
+    ],
   },
   {
-    title: "Allumer",
-    text: (
-      <>Appuyez une fois sur le bouton de la carte — ou maintenez-le <b>3 secondes</b> selon
-      le modèle. <b>Un bip</b> confirme l&apos;allumage.</>
-    ),
-    screen: cardPressScreen,
+    title: "Autoriser",
+    screens: [
+      { img: "/setup/android/07-usage.png", alt: "Usage responsable", caption: <>Acceptez l&apos;usage responsable : <b>Continuer</b>.</>, hint: { x: 74, y: 82 } },
+      { img: "/setup/android/08-reseau.png", alt: "Activer le réseau Find Hub", caption: <>Activez le <b>réseau Find Hub</b> pour mieux localiser.</>, hint: { x: 75, y: 82 } },
+    ],
   },
   {
-    title: "Fast Pair",
-    text: (
-      <>Le pop-up <b>Fast Pair</b> s&apos;affiche tout seul : touchez « Connecter ».
-      <br />
-      <span style={{ opacity: .85 }}>Rien ne s&apos;affiche ? Ouvrez Find Hub, touchez <b>+</b> puis « Ajouter un appareil ».</span></>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ height: 120, borderRadius: 12, background: "rgba(140,183,214,.06)", marginBottom: "auto" }} />
-        <div className="ph-pop">
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(16,185,129,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Signal size={16} style={{ color: "var(--signal)" }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 12.5, fontWeight: 600 }}>SkyTrack Card</div>
-              <div className="muted" style={{ fontSize: 10.5 }}>Appareil à proximité</div>
-            </div>
-          </div>
-          <div style={{ background: "linear-gradient(96deg,var(--signal),var(--signal-dim))", color: "#fff", textAlign: "center", padding: "9px", borderRadius: 9, fontSize: 12.5, fontWeight: 700 }}>Connecter</div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    title: "Compte Google",
-    text: (
-      <>Choisissez votre compte, acceptez l&apos;usage responsable, puis <b>donnez un nom</b> à
-      la carte (ex. « Portefeuille »).</>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 12 }}>Lier à votre compte Google</div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "9px 11px", borderRadius: 9, border: "1px solid var(--line)", marginBottom: 10 }}>
-          <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(140,183,214,.15)" }} />
-          <span style={{ fontSize: 11.5 }} className="muted">compte@gmail.com</span>
-        </div>
-        <div className="muted" style={{ fontSize: 10.5, lineHeight: 1.5, marginBottom: "auto" }}>Utilisez la carte de façon responsable, sûre et légale.</div>
-        <div style={{ background: "var(--bg-alt)", textAlign: "center", padding: "9px", borderRadius: 9, fontSize: 12, fontWeight: 600 }}>J&apos;accepte</div>
-      </div>
-    ),
-  },
-  {
-    title: "Find Hub",
-    text: (
-      <>C&apos;est prêt. La carte apparaît dans Find Hub : dernière position, sonnerie à
-      distance, et mode « objet perdu ».</>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 12 }}>Find Hub</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "11px", borderRadius: 10, background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.25)", marginBottom: 10 }}>
-          <Wallet size={18} style={{ color: "var(--signal)" }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600 }}>Mon portefeuille</div>
-            <div className="sig" style={{ fontSize: 10.5 }}>À proximité · maintenant</div>
-          </div>
-          <Check size={16} style={{ color: "var(--signal)" }} />
-        </div>
-        <div style={{ height: 90, borderRadius: 10, background: "linear-gradient(160deg,rgba(16,185,129,.06),transparent)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "auto" }}>
-          <MapPin size={22} style={{ color: "var(--signal)" }} />
-        </div>
-      </div>
-    ),
+    title: "Prêt",
+    screens: [
+      { img: "/setup/android/09-fiche.png", alt: "Fiche de la carte dans Find Hub", caption: <>C&apos;est prêt : sonnerie, « plus chaud / plus froid » et partage.</> },
+    ],
   },
 ];
 
-/* ── iPhone ──────────────────────────────────────────────────────────────── */
-
+/* ── iPhone — Localiser ─────────────────────────────────────────────────────── */
 const IOS: SetupStep[] = [
   {
-    title: "Localiser",
-    text: (
-      <>Ouvrez l&apos;app <b>Localiser</b>, déjà installée sur iPhone. Aucune application
-      tierce n&apos;est nécessaire.</>
-    ),
-    screen: (
-      <div className="ph-body">
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Localiser</div>
-        <div style={{ display: "flex", gap: 16, borderBottom: "1px solid var(--line)", paddingBottom: 10, marginBottom: 14 }}>
-          <span className="muted" style={{ fontSize: 12 }}>Personnes</span>
-          <span className="muted" style={{ fontSize: 12 }}>Appareils</span>
-          <span className="sig" style={{ fontSize: 12, fontWeight: 700 }}>Objets</span>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 11px", borderRadius: 10, background: "rgba(16,185,129,.08)", border: "1px dashed rgba(16,185,129,.4)" }}>
-          <Plus size={16} style={{ color: "var(--signal)" }} />
-          <span className="sig" style={{ fontSize: 12.5, fontWeight: 600 }}>Ajouter un objet</span>
-        </div>
-      </div>
-    ),
+    title: "Ouvrir",
+    screens: [
+      { img: "/setup/ios/01-home.png", alt: "Icône Localiser sur l'écran d'accueil", caption: <>Ouvrez l&apos;app <b>Localiser</b>, déjà installée sur iPhone.</>, hint: { x: 39, y: 25, label: "Localiser" } },
+      { img: "/setup/ios/02-permission.png", alt: "Autorisation de position", caption: <>Autorisez « Localiser » à utiliser votre <b>position</b>.</>, hint: { x: 49, y: 76 } },
+      { img: "/setup/ios/03-notif.png", alt: "Activer les notifications", caption: <>Activez les <b>notifications</b> pour être alerté.</>, hint: { x: 49, y: 83 } },
+    ],
   },
-  {
-    title: "Allumer",
-    text: (
-      <>Appuyez une fois sur le bouton de la carte — ou maintenez-le <b>3 secondes</b> selon
-      le modèle. <b>Un bip</b> confirme l&apos;allumage.</>
-    ),
-    screen: cardPressScreen,
-  },
+  powerOnStep,
   {
     title: "Ajouter",
-    text: (
-      <>Dans l&apos;onglet <b>Objets</b> (en bas), touchez <b>+</b> puis « Ajouter un autre
-      objet ».</>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ height: 110, borderRadius: 12, background: "rgba(140,183,214,.05)", marginBottom: "auto" }} />
-        <div className="ph-pop">
-          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Ajouter un autre objet</div>
-          <div className="muted" style={{ fontSize: 10.5, marginBottom: 12 }}>Appuyez sur le bouton de votre carte.</div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <div className="thecard" style={{ transform: "scale(.85)" }}>
-              <div className="font-mono" style={{ fontSize: 8, color: "rgba(255,255,255,.62)" }}>SKYTRACK</div>
-              <span className="pulse-dot" />
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
+    screens: [
+      { img: "/setup/ios/04-objets.png", alt: "Onglet Objets", caption: <>Onglet <b>Objets</b>, touchez « Ajouter un objet ».</>, hint: { x: 49, y: 80 } },
+      { img: "/setup/ios/05-ajouter.png", alt: "Ajouter un autre objet", caption: <>Choisissez « <b>Autre objet pris en charge</b> ».</>, hint: { x: 49, y: 84 } },
+      { img: "/setup/ios/06-connecter.png", alt: "Carte détectée, bouton Connecter", caption: <>La carte est détectée : touchez « <b>Connecter</b> ».</>, hint: { x: 49, y: 83, label: "Connecter" } },
+    ],
   },
   {
     title: "Nommer",
-    text: (
-      <>La carte est détectée : touchez « Connecter », donnez-lui un nom et un emoji, puis
-      confirmez avec votre <b>identifiant Apple</b>.</>
-    ),
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(16,185,129,.12)", border: "1px solid rgba(16,185,129,.35)", display: "flex", alignItems: "center", justifyContent: "center", margin: "10px 0 14px" }}>
-          <Wallet size={26} style={{ color: "var(--signal)" }} />
-        </div>
-        <div style={{ fontSize: 12.5, fontWeight: 600 }}>Carte détectée</div>
-        <div className="muted" style={{ fontSize: 10.5, marginBottom: "auto", marginTop: 4 }}>Nommez votre objet</div>
-        <div style={{ width: "100%", padding: "9px", borderRadius: 9, border: "1px solid var(--line)", fontSize: 11.5, marginBottom: 10 }} className="muted">Mon portefeuille 💳</div>
-        <div style={{ width: "100%", background: "linear-gradient(96deg,var(--signal),var(--signal-dim))", color: "#fff", textAlign: "center", padding: "9px", borderRadius: 9, fontSize: 12, fontWeight: 700 }}>Continuer</div>
-      </div>
-    ),
+    screens: [
+      { img: "/setup/ios/07-nom.png", alt: "Nommer l'objet", caption: <>Donnez un <b>nom</b> à votre carte, puis Continuer.</>, hint: { x: 49, y: 68 } },
+      { img: "/setup/ios/08-emoji.png", alt: "Choisir un emoji", caption: <>Choisissez un <b>emoji</b>, puis Continuer.</>, hint: { x: 49, y: 40 } },
+      { img: "/setup/ios/09-compte.png", alt: "Association au compte Apple", caption: <>Associez-la à votre <b>compte Apple</b> : Accepter.</>, hint: { x: 49, y: 90 } },
+    ],
   },
   {
-    title: "Terminé",
-    text: <>C&apos;est prêt. La carte apparaît dans <b>Localiser → Objets</b>.</>,
-    screen: (
-      <div className="ph-body" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(16,185,129,.15)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-          <Check size={30} style={{ color: "var(--signal)" }} />
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>C&apos;est prêt !</div>
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>Votre carte apparaît dans Localiser → Objets.</div>
-      </div>
-    ),
+    title: "Prêt",
+    screens: [
+      { img: "/setup/ios/10-fiche.png", alt: "Fiche de l'objet", caption: <>C&apos;est prêt : itinéraire, sonnerie et mode perdu.</>, hint: { x: 49, y: 90, label: "Terminer" } },
+      { img: "/setup/ios/11-actions.png", alt: "Actions sur l'objet", caption: <>Retrouvez votre carte dans <b>Localiser → Objets</b>.</> },
+    ],
   },
 ];
 
 export const SETUP_STEPS: Record<OS, SetupStep[]> = { android: ANDROID, ios: IOS };
 
-/* ── Réinitialisation ────────────────────────────────────────────────────── */
-
-/**
- * Dépannage, pas installation : hors de la numérotation principale. C'est la
- * marche à suivre pour changer de téléphone ou de réseau — une carte ne se
- * connectant qu'à un seul réseau à la fois.
- */
+/* ── Réinitialisation ────────────────────────────────────────────────────────
+   Dépannage (changer de téléphone / de réseau), hors du décompte principal.
+   Les captures reset-1/reset-2 existent dans /public/setup mais restent en
+   texte ici : ce bloc est replié par défaut, on garde l'info dense. */
 export function resetSteps(os: OS): { title: string; text: React.ReactNode }[] {
   const app = os === "ios" ? "Localiser" : "Find Hub";
   return [

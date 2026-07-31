@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { X, Share, SquarePlus, Smartphone, MoreVertical } from "lucide-react";
+import { claimBanner, releaseBanner, subscribeBanner } from "./banner-bus";
 
 /**
  * Bannière « Ajouter à l'écran d'accueil » :
@@ -64,7 +65,11 @@ export function InstallPrompt() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const autoShow = (m: "native" | "ios") => {
       if (recentlyDismissed()) return;
-      timer = setTimeout(() => setMode(m), SHOW_DELAY_MS);
+      // Le créneau bannière est partagé avec le rappel « app de suivi » :
+      // si celui-ci s'affiche déjà, on attend la prochaine visite.
+      timer = setTimeout(() => {
+        if (claimBanner("install")) setMode(m);
+      }, SHOW_DELAY_MS);
     };
 
     const onBeforeInstall = (e: Event) => {
@@ -79,25 +84,35 @@ export function InstallPrompt() {
     // Ouverture manuelle (lien « Installer l'application ») : pas de délai,
     // et on passe outre le refus mémorisé.
     const onOpen = () => {
+      claimBanner("install", true); // évince l'autre bannière si besoin
       if (deferredPrompt.current) setMode("native");
       else if (isIos()) setMode("ios");
       else setMode("generic");
     };
     window.addEventListener(OPEN_EVENT, onOpen);
 
-    const onInstalled = () => setMode("hidden");
+    const onInstalled = () => {
+      setMode("hidden");
+      releaseBanner("install");
+    };
     window.addEventListener("appinstalled", onInstalled);
+
+    const unsubscribe = subscribeBanner((owner) => {
+      if (owner && owner !== "install") setMode("hidden");
+    });
 
     return () => {
       if (timer) clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener(OPEN_EVENT, onOpen);
       window.removeEventListener("appinstalled", onInstalled);
+      unsubscribe();
     };
   }, []);
 
   const dismiss = () => {
     setMode("hidden");
+    releaseBanner("install");
     try {
       localStorage.setItem(DISMISS_KEY, String(Date.now()));
     } catch {}
@@ -108,6 +123,7 @@ export function InstallPrompt() {
     if (!evt) return;
     deferredPrompt.current = null;
     setMode("hidden");
+    releaseBanner("install");
     await evt.prompt();
     const { outcome } = await evt.userChoice;
     if (outcome === "dismissed") {

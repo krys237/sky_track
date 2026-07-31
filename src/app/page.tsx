@@ -3,7 +3,7 @@
 import React from "react";
 import {
   ArrowRight, PlayCircle, Signal, Lock, Smartphone, Truck, Plus,
-  Check, Fingerprint, LockKeyhole,
+  Check, Fingerprint, LockKeyhole, Settings2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Btn, SectionHead, TransparentImage } from "@/components/ui";
@@ -25,7 +25,10 @@ const PAYMENTS: { id: string; name: string; img: string; desc: string; tag: stri
   { id: "mtn", name: "MTN Mobile Money", img: "/payments/mtn-mobile-money.jpg", desc: "Payez depuis votre téléphone MTN, sans compte bancaire.", tag: "Sans banque" },
   { id: "orange", name: "Orange Money", img: "/payments/orange-money.png", desc: "Réglez directement avec votre solde Orange Money.", tag: "Instantané" },
   { id: "card", name: "Visa / Mastercard", img: "/payments/visa-mastercard.webp", desc: "Carte bancaire internationale, débit sécurisé.", tag: "Paiement sécurisé" },
-  { id: "cash", name: "Paiement en cash", img: "/payments/cash.jpg", desc: "Payez en espèces sur place, en toute simplicité.", tag: "À la livraison" },
+  // Masqué : le paiement se fait en ligne uniquement pour l'instant. Le cash
+  // n'existe ni dans PayMethod ni dans l'enum SQL ; à réactiver avec sa logique
+  // de confirmation dédiée si le paiement à la livraison est réintroduit.
+  // { id: "cash", name: "Paiement en cash", img: "/payments/cash.jpg", desc: "Payez en espèces sur place, en toute simplicité.", tag: "À la livraison" },
 ];
 
 // Stats de confiance affichées en bas de la section « À quoi ça sert » (icône · valeur forte · libellé)
@@ -220,6 +223,10 @@ export default function HomePage() {
       <div id="how" className="wrap" style={{ scrollMarginTop: 96, paddingTop: 78, paddingBottom: 20 }}>
         <SectionHead center eyebrow="Le principe" title="Comment votre objet se fait retrouver" sub="Cinq temps, et une multitude de téléphones qui travaillent pour vous." />
         <PrincipleRoad />
+        {/* Accès direct au guide de configuration pas à pas (hors tunnel d'achat). */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 30 }}>
+          <Btn variant="ghost" onClick={() => go("guide")}><Settings2 size={18} /> Configurer ma carte</Btn>
+        </div>
       </div>
 
       {/* 05 — NOS PACKS (2 options, une par produit — données uniquement, cf JOURNAL.md).

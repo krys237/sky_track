@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Mail, MessageCircle, Lock, ChevronLeft, ArrowRight } from "lucide-react";
+import { Mail, MessageCircle, Lock, ChevronLeft, ArrowRight, Store, Truck } from "lucide-react";
 import { Btn } from "@/components/ui";
 import { PhoneField } from "@/components/PhoneField";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +55,8 @@ export function StepAccount({ flow, setFlow, next, back }: StepProps) {
     next();
   };
 
+  const isDelivery = flow.mode === "livraison";
+
   const validate = () => {
     const er: Partial<Record<keyof Flow, string>> = {};
     if (!flow.name.trim()) er.name = "Indiquez votre nom.";
@@ -63,8 +65,11 @@ export function StepAccount({ flow, setFlow, next, back }: StepProps) {
     } else {
       if (!/^\+?[0-9\s]{8,}$/.test(flow.contact)) er.contact = "Numéro WhatsApp invalide.";
     }
-    if (!flow.city.trim()) er.city = "Indiquez votre ville.";
-    if (!flow.address.trim()) er.address = "Indiquez un quartier / une adresse.";
+    // L'adresse n'est requise (et n'a de sens) qu'en livraison.
+    if (isDelivery) {
+      if (!flow.city.trim()) er.city = "Indiquez votre ville.";
+      if (!flow.address.trim()) er.address = "Indiquez un quartier / une adresse.";
+    }
     setErr(er);
     return Object.keys(er).length === 0;
   };
@@ -72,7 +77,20 @@ export function StepAccount({ flow, setFlow, next, back }: StepProps) {
   return (
     <div className="fade" style={{ maxWidth: 560 }}>
       <h2 className="font-display" style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Vos informations</h2>
-      <p className="muted" style={{ marginBottom: 24 }}>Pour vous confirmer la commande et organiser la livraison.</p>
+      <p className="muted" style={{ marginBottom: 24 }}>
+        {isDelivery
+          ? "Pour vous confirmer la commande et organiser la livraison."
+          : "Pour vous confirmer le paiement et vous remettre votre produit sur place."}
+      </p>
+
+      {/* Mode de vente — pilote l'adresse (livraison seulement) et les frais. */}
+      <div style={{ marginBottom: 20 }}>
+        <label className="fld">Comment récupérez-vous votre produit ?</label>
+        <div className="seg">
+          <button className={!isDelivery ? "on" : ""} onClick={() => setFlow((f) => ({ ...f, mode: "sur_place" }))}><Store size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />Sur place</button>
+          <button className={isDelivery ? "on" : ""} onClick={() => setFlow((f) => ({ ...f, mode: "livraison" }))}><Truck size={15} style={{ marginRight: 6, verticalAlign: "-2px" }} />Livraison</button>
+        </div>
+      </div>
 
       <div style={{ marginBottom: 20 }}>
         <label className="fld">Comment souhaitez-vous être contacté ?</label>
@@ -97,22 +115,24 @@ export function StepAccount({ flow, setFlow, next, back }: StepProps) {
           )}
           {err.contact && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.contact}</div>}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div>
-            <label className="fld">Ville</label>
-            <input value={flow.city} onChange={set("city")} placeholder="Yaoundé" />
-            {err.city && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.city}</div>}
+        {isDelivery && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label className="fld">Ville</label>
+              <input value={flow.city} onChange={set("city")} placeholder="Yaoundé" />
+              {err.city && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.city}</div>}
+            </div>
+            <div>
+              <label className="fld">Quartier / adresse</label>
+              <input value={flow.address} onChange={set("address")} placeholder="Bastos, rue…" />
+              {err.address && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.address}</div>}
+            </div>
           </div>
-          <div>
-            <label className="fld">Quartier / adresse</label>
-            <input value={flow.address} onChange={set("address")} placeholder="Bastos, rue…" />
-            {err.address && <div style={{ color: "var(--amber)", fontSize: 12.5, marginTop: 6 }}>{err.address}</div>}
-          </div>
-        </div>
+        )}
       </div>
 
       <p className="muted2" style={{ fontSize: 12.5, marginTop: 16, display: "flex", gap: 8, alignItems: "flex-start" }}>
-        <Lock size={13} style={{ flex: "0 0 auto", marginTop: 2 }} /> Nous utilisons ce contact uniquement pour la confirmation et le suivi de votre commande.
+        <Lock size={13} style={{ flex: "0 0 auto", marginTop: 2 }} /> Nous utilisons ce contact uniquement pour {isDelivery ? "la confirmation et le suivi de votre commande" : "la confirmation de votre paiement"}.
       </p>
 
       <div className="stack-sm" style={{ display: "flex", gap: 12, marginTop: 28 }}>
