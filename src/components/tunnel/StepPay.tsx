@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Loader, X, Shield, ChevronLeft, ArrowRight, Clock, RefreshCw, UserCheck,
 } from "lucide-react";
@@ -9,7 +9,7 @@ import { PhoneField } from "@/components/PhoneField";
 import { Summary } from "./Summary";
 import { PACKS, fcfa, orderTotal, normalizeRefCode, isValidRefCode } from "@/lib/content";
 import {
-  createOrder, initiatePayment, confirmMockPayment, getOrderStatus,
+  createOrder, initiatePayment, confirmMockPayment, getOrderStatus, isDemoPayment,
 } from "@/app/commander/actions";
 import type { StepProps } from "./shared";
 import type { PayMethod } from "@/lib/types";
@@ -50,6 +50,13 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
   // agent (?ref=…). Obligatoire en sur-place (c'est la vente de l'agent),
   // facultatif en livraison.
   const [refCode, setRefCode] = useState(flow.refCode ?? "");
+  // `null` tant que le serveur n'a pas répondu : la bannière Démo et le
+  // sélecteur Succès/Échec n'apparaissent qu'une fois le mode mock confirmé.
+  const [demo, setDemo] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    isDemoPayment().then(setDemo).catch(() => setDemo(false));
+  }, []);
 
   const total = orderTotal(pack.price, flow.mode);
   const refRequired = flow.mode === "sur_place";
@@ -158,9 +165,12 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
     }
 
     // 3. Simule la validation client + le webhook agrégateur (mock uniquement ;
-    //    sans effet avec un agrégateur réel, où le webhook arrive tout seul).
-    await sleep(1600);
-    await confirmMockPayment(init.transactionId, demoResult === "success" ? "success" : "failed");
+    //    avec le hub réel, la confirmation arrive par webhook ou réconciliation).
+    const isDemo = demo ?? (await isDemoPayment().catch(() => false));
+    if (isDemo) {
+      await sleep(1600);
+      await confirmMockPayment(init.transactionId, demoResult === "success" ? "success" : "failed");
+    }
 
     // 4. Attend la confirmation (statut terminal de la commande).
     settle(await pollStatus(commandeId));
@@ -183,14 +193,16 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
           <h2 className="font-display" style={{ fontSize: 24, fontWeight: 700, margin: `${HEAD_OFFSET}px 0 8px` }}>Paiement</h2>
           <p className="muted" style={{ marginBottom: 22 }}>Choisissez votre moyen de paiement préféré.</p>
 
-          {/* demo banner */}
-          <div className="card" style={{ padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "rgba(255,176,32,.06)", borderColor: "rgba(255,176,32,.25)" }}>
-            <span style={{ fontSize: 12.5, color: "var(--amber)" }}><b>Démo</b> — aucun paiement réel. Testez le résultat :</span>
-            <div className="seg" style={{ padding: 3 }}>
-              <button className={demoResult === "success" ? "on" : ""} style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => setDemoResult("success")}>Succès</button>
-              <button className={demoResult === "error" ? "on" : ""} style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => setDemoResult("error")}>Échec</button>
+          {/* Bannière démo — uniquement quand l'agrégateur mock est actif. */}
+          {demo === true && (
+            <div className="card" style={{ padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "rgba(255,176,32,.06)", borderColor: "rgba(255,176,32,.25)" }}>
+              <span style={{ fontSize: 12.5, color: "var(--amber)" }}><b>Démo</b> — aucun paiement réel. Testez le résultat :</span>
+              <div className="seg" style={{ padding: 3 }}>
+                <button className={demoResult === "success" ? "on" : ""} style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => setDemoResult("success")}>Succès</button>
+                <button className={demoResult === "error" ? "on" : ""} style={{ padding: "6px 12px", fontSize: 12.5 }} onClick={() => setDemoResult("error")}>Échec</button>
+              </div>
             </div>
-          </div>
+          )}
 
           {phase === "pending" ? (
             <div className="card" style={{ padding: 30, textAlign: "center" }}>

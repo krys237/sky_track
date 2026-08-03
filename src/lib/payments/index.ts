@@ -1,15 +1,16 @@
 import "server-only";
 import type { PaymentProvider } from "./types";
 import { mockProvider } from "./mock";
+import { hubProvider } from "./hub";
 
 /**
  * Sélection de l'agrégateur actif via `PAYMENT_PROVIDER` (défaut : `mock`).
- * Pour brancher votre hub : ajoutez `./hub.ts` implémentant `PaymentProvider`,
- * enregistrez-le ci-dessous, puis passez `PAYMENT_PROVIDER=hub` dans .env.local.
+ * `hub` = hub de paiement EdoctorPaiement (OM / MoMo réels) — requiert
+ * EDOCTOR_HUB_TOKEN et EDOCTOR_HUB_WEBHOOK_SECRET dans .env.local.
  */
 const PROVIDERS: Record<string, PaymentProvider> = {
   mock: mockProvider,
-  // hub: hubProvider,
+  hub: hubProvider,
 };
 
 export function getPaymentProvider(): PaymentProvider {

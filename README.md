@@ -75,4 +75,8 @@ généré côté client (`StepConfirm`) en attendant la persistance serveur.
 Tous les textes sont regroupés dans `src/lib/content.ts` pour préparer
 l'ajout de l'anglais (i18n) en phase 2.
 
+🔌 Pour brancher votre hub plus tard (aucun autre changement en aval)
 
+1. Créez src/lib/payments/<hub>.ts implémentant PaymentProvider, enregistrez-le dans index.ts.
+2. PAYMENT_PROVIDER=<hub> dans .env.local.
+3. Pointez le callback du hub sur /api/payments/webhook et ajoutez-y la vérification de signature (commentaire ⚠️ Sécurité déjà en place). finalizePayment (idempotent) est partagé avec le mock → le reste ne bouge pas.

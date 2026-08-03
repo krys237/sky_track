@@ -371,7 +371,7 @@ export async function initiatePayment(
     commande_id: commande.id,
     agregateur: provider.name,
     transaction_id: initiation.transactionId,
-    statut: initiation.status,
+    statut: "pending",
   });
   if (payErr) {
     console.error("[initiatePayment] insert paiements échoué :", {
@@ -381,6 +381,18 @@ export async function initiatePayment(
       hint: payErr.hint,
     });
     return { ok: false, error: "Échec de l'enregistrement du paiement." };
+  }
+
+  // Refus immédiat du provider (ex. solde insuffisant détecté à l'initiation) :
+  // aucun webhook ne viendra, on finalise tout de suite — le tunnel verra
+  // `echouee` dès son premier sondage.
+  if (initiation.status === "failed") {
+    await finalizePayment({
+      transactionId: initiation.transactionId,
+      result: "failed",
+      agregateur: provider.name,
+      rawPayload: { source: "initiation-failed", transactionId: initiation.transactionId },
+    });
   }
 
   return {
@@ -397,6 +409,64 @@ export interface OrderStatusResult {
   statut?: StatutCommande;
 }
 
+/**
+ * Filet anti-webhook-perdu : au-delà de ce délai sans confirmation, le sondage
+ * interroge directement l'agrégateur (throttlé pour ne pas marteler le hub à
+ * chaque tick du tunnel). En mémoire process : un cold start remet juste les
+ * compteurs à zéro, sans conséquence.
+ */
+const RECONCILE_AFTER_MS = 45_000;
+const RECONCILE_EVERY_MS = 15_000;
+const lastReconcileAt = new Map<string, number>();
+
+/**
+ * Si un paiement `pending` traîne, demande son état réel à l'agrégateur et
+ * finalise le cas échéant. Couvre le webhook perdu — et le dev local, où le
+ * hub ne peut pas joindre localhost. Sans effet avec le mock (pas de
+ * `checkStatus`).
+ */
+async function reconcilePendingPayment(
+  admin: ReturnType<typeof createAdminClient>,
+  commandeId: string,
+): Promise<StatutCommande | null> {
+  const provider = getPaymentProvider();
+  if (!provider.checkStatus) return null;
+
+  const { data: paiement } = await admin
+    .from("paiements")
+    .select("transaction_id, created_at")
+    .eq("commande_id", commandeId)
+    .eq("statut", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!paiement?.transaction_id) return null;
+
+  const age = Date.now() - new Date(paiement.created_at).getTime();
+  if (age < RECONCILE_AFTER_MS) return null;
+
+  const last = lastReconcileAt.get(paiement.transaction_id) ?? 0;
+  if (Date.now() - last < RECONCILE_EVERY_MS) return null;
+  lastReconcileAt.set(paiement.transaction_id, Date.now());
+
+  try {
+    const outcome = await provider.checkStatus(paiement.transaction_id);
+    if (!outcome) return null; // toujours en attente côté provider
+    const finalized = await finalizePayment({
+      ...outcome,
+      agregateur: provider.name,
+      rawPayload: { source: "status-poll", transactionId: paiement.transaction_id },
+    });
+    if (finalized.ok && finalized.statut) {
+      lastReconcileAt.delete(paiement.transaction_id);
+      return finalized.statut;
+    }
+  } catch (e) {
+    console.error("[getOrderStatus] réconciliation agrégateur échouée :", e);
+  }
+  return null;
+}
+
 /** Sonde le statut d'une commande (utilisé en attente de confirmation). */
 export async function getOrderStatus(commandeId: string): Promise<OrderStatusResult> {
   if (!commandeId) return { ok: false, error: "Commande manquante." };
@@ -407,7 +477,20 @@ export async function getOrderStatus(commandeId: string): Promise<OrderStatusRes
     .eq("id", commandeId)
     .single();
   if (error || !data) return { ok: false, error: "Commande introuvable." };
+
+  if (data.statut === "initiee") {
+    const reconciled = await reconcilePendingPayment(admin, commandeId);
+    if (reconciled) return { ok: true, statut: reconciled };
+  }
   return { ok: true, statut: data.statut };
+}
+
+/**
+ * Le tunnel n'affiche la bannière « Démo » et ne simule le webhook que si
+ * l'agrégateur actif est le mock — avec le hub réel, tout ceci disparaît.
+ */
+export async function isDemoPayment(): Promise<boolean> {
+  return isMockPayments();
 }
 
 /**

@@ -511,12 +511,12 @@ function Support() {
         <a className="reset card" href="https://wa.me/237640759203" target="_blank" rel="noreferrer" style={{ padding: 24, cursor: "pointer", display: "block" }}>
           <MessageCircle size={24} style={{ color: "var(--signal)", marginBottom: 14 }} />
           <h3 className="font-display" style={{ fontSize: 17, fontWeight: 600, margin: "0 0 6px" }}>WhatsApp</h3>
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>+237 6 00 00 00 00 — réponse rapide, 7j/7.</p>
+          <p className="muted" style={{ fontSize: 14, margin: 0 }}>+237 6 40 75 92 03 — réponse rapide, 7j/7.</p>
         </a>
         <a className="reset card" href="mailto:hello@skytrack.cm" style={{ padding: 24, cursor: "pointer", display: "block" }}>
           <Mail size={24} style={{ color: "var(--signal)", marginBottom: 14 }} />
           <h3 className="font-display" style={{ fontSize: 17, fontWeight: 600, margin: "0 0 6px" }}>Email</h3>
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>hello@skytrack.cm</p>
+          <p className="muted" style={{ fontSize: 14, margin: 0 }}>contact@skytrack.com</p>
         </a>
         <div className="card" style={{ padding: 24 }}>
           <Phone size={24} style={{ color: "var(--signal)", marginBottom: 14 }} />

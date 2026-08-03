@@ -113,10 +113,13 @@ export const TAG_PRODUCTS: TagProduct[] = [
 // Options d'achat de la page d'accueil = 1 par produit (Carte / Tag rond /
 // Chargeur). PRIX confirmés : Carte 14 900 F · Tag rond 9 900 F · Chargeur
 // 4 500 F. « Commander » entre dans le tunnel existant. Voir JOURNAL.md.
+// ⚠️ PRIX DE TEST À 50 F (validation du hub de paiement réel, 2026-08-03).
+// Restaurer les prix confirmés ci-dessus dès le test bout-en-bout terminé :
+//   carte 14900 · rond 9900 · chargeur 4500.
 export const PACK_OPTIONS: { productId: TagProduct["id"]; price: number; best?: boolean }[] = [
-  { productId: "carte", price: 14900, best: true },
-  { productId: "rond", price: 9900 },
-  { productId: "chargeur", price: 4500 },
+  { productId: "carte", price: 50, best: true },
+  { productId: "rond", price: 50 },
+  { productId: "chargeur", price: 50 },
 ];
 
 // Le tunnel de commande vend exactement les mêmes 2 produits que la page

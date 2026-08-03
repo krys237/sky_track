@@ -67,6 +67,15 @@ export async function finalizePayment(
   const success = data.result === "success";
   const statutCommande: "payee" | "echouee" = success ? "payee" : "echouee";
 
+  // Contrôle de cohérence : un montant confirmé différent du montant attendu
+  // n'invalide pas le paiement (l'agrégateur a bien encaissé), mais doit
+  // laisser une trace pour investigation (`montant_verifie` divergent en base).
+  if (success && typeof data.amount === "number" && Math.round(data.amount) !== commande.montant) {
+    console.warn(
+      `[finalizePayment] montant confirmé (${data.amount}) ≠ montant commande (${commande.montant}) — ref ${commande.ref}`,
+    );
+  }
+
   // 2. Mise à jour du paiement ----------------------------------------------
   await admin
     .from("paiements")

@@ -49,4 +49,15 @@ export interface PaymentProvider {
   initiate(params: InitiatePaymentParams): Promise<PaymentInitiation>;
   /** Transforme un payload de webhook brut en résultat exploitable. */
   parseWebhook(payload: unknown): NormalizedWebhook | null;
+  /**
+   * Authentifie un webhook entrant (signature HMAC sur le corps brut).
+   * Absent (mock) = aucun contrôle. Retourner `false` rejette la requête en 401.
+   */
+  verifyWebhook?(rawBody: string, headers: Headers): boolean;
+  /**
+   * Interroge l'agrégateur sur l'état réel d'une transaction — filet de
+   * sécurité quand le webhook se perd. `null` = toujours en attente (ou
+   * indisponible), sinon le résultat final à passer à `finalizePayment`.
+   */
+  checkStatus?(transactionId: string): Promise<NormalizedWebhook | null>;
 }
