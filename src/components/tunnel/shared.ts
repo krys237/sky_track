@@ -13,3 +13,14 @@ export interface StepProps {
 export interface SetupProps extends StepProps {
   detectedOS: OS | null;
 }
+
+/**
+ * État constaté côté serveur lors d'une reprise de commande (page rechargée
+ * pendant l'attente de paiement) : `initiee` = re-sonder, `echouee` = afficher
+ * l'échec et permettre une nouvelle tentative.
+ */
+export type ResumeStatus = "initiee" | "echouee";
+
+export interface StepPayProps extends StepProps {
+  resumeStatus?: ResumeStatus | null;
+}

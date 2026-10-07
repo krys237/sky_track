@@ -11,9 +11,10 @@ import { PACKS, fcfa, orderTotal, normalizeRefCode, isValidRefCode } from "@/lib
 import {
   createOrder, initiatePayment, confirmMockPayment, getOrderStatus, isDemoPayment,
 } from "@/app/commander/actions";
-import type { StepProps } from "./shared";
+import type { StepPayProps } from "./shared";
 import type { PayMethod } from "@/lib/types";
 import { markPaidOnDevice } from "@/lib/findapp";
+import { clearPendingOrder, savePendingOrder } from "@/lib/orderResume";
 
 /** `unknown` : issue non tranchée — surtout pas présentée comme un échec. */
 type Phase = "form" | "pending" | "error" | "unknown";
@@ -38,12 +39,17 @@ const POLL_ATTEMPTS = 45; // ≈ 90 s
  */
 const HEAD_OFFSET = 20;
 
-export function StepPay({ flow, setFlow, next, back }: StepProps) {
+export function StepPay({ flow, setFlow, next, back, resumeStatus }: StepPayProps) {
   const pack = PACKS.find((p) => p.id === flow.pack)!;
   const [method, setMethod] = useState<PayMethod>(flow.pay || "momo");
-  const [phase, setPhase] = useState<Phase>("form");
+  // Reprise après rechargement : `echouee` ré-affiche l'échec directement.
+  const [phase, setPhase] = useState<Phase>(resumeStatus === "echouee" ? "error" : "form");
   const [demoResult, setDemoResult] = useState<"success" | "error">("success");
-  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [errMsg, setErrMsg] = useState<string | null>(
+    resumeStatus === "echouee"
+      ? "Votre précédente tentative de paiement a été annulée ou a échoué."
+      : null,
+  );
   const [momoNum, setMomoNum] = useState("");
   const [card, setCard] = useState({ num: "", exp: "", cvv: "", name: "" });
   // Code de l'agent de terrain. Pré-rempli si le client est arrivé via un lien
@@ -97,6 +103,7 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
   /** Échec avéré (transaction refusée) : la prochaine tentative repart à neuf. */
   const failDefinitive = (msg: string) => {
     newAttempt();
+    clearPendingOrder(); // issue tranchée : plus rien à reprendre après refresh
     setFlow((f) => ({ ...f, commandeId: null, orderRef: null }));
     setErrMsg(msg);
     setPhase("error");
@@ -124,6 +131,21 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
     next(); // payee (ou déjà expediee/livree)
   };
 
+  // Reprise après rechargement avec une issue encore indécise : on relance le
+  // sondage immédiatement (il déclenche aussi la réconciliation serveur↔hub),
+  // sans jamais ré-initier de paiement.
+  useEffect(() => {
+    if (resumeStatus !== "initiee" || !flow.commandeId) return;
+    let stopped = false;
+    (async () => {
+      setPhase("pending");
+      const statut = await pollStatus(flow.commandeId!);
+      if (!stopped) settle(statut);
+    })();
+    return () => { stopped = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pay = async () => {
     setErrMsg(null);
     setPhase("pending");
@@ -141,7 +163,13 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
       return;
     }
     const commandeId = order.commandeId;
+    const flowWithOrder = {
+      ...flow, pay: method, refCode: normalizedRef, orderRef: order.ref!, commandeId,
+    };
     setFlow((f) => ({ ...f, pay: method, refCode: normalizedRef, orderRef: order.ref!, commandeId }));
+    // Pointeur de reprise : si la page est rechargée pendant l'attente, le
+    // tunnel retrouvera cette commande et son statut réel côté serveur.
+    savePendingOrder(flowWithOrder);
 
     // La tentative précédente avait en fait abouti (réponse perdue en route) :
     // on reprend le parcours à son état réel plutôt que d'encaisser deux fois.
@@ -181,6 +209,19 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
     if (!flow.commandeId) return;
     setPhase("pending");
     settle(await pollStatus(flow.commandeId));
+  };
+
+  /**
+   * Abandon volontaire d'une tentative restée indécise : on efface le pointeur
+   * de reprise et on repart sur un formulaire neuf. Réservé au client qui SAIT
+   * qu'il n'a pas validé (il a annulé / ignoré la demande sur son téléphone).
+   */
+  const abandonPending = () => {
+    clearPendingOrder();
+    newAttempt();
+    setFlow((f) => ({ ...f, commandeId: null, orderRef: null }));
+    setErrMsg(null);
+    setPhase("form");
   };
 
   const fmtCard = (v: string) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
@@ -241,10 +282,14 @@ export function StepPay({ flow, setFlow, next, back }: StepProps) {
                   )}
                 </div>
               </div>
-              <Btn variant="primary" onClick={recheck}><RefreshCw size={16} /> Vérifier à nouveau</Btn>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Btn variant="primary" onClick={recheck}><RefreshCw size={16} /> Vérifier à nouveau</Btn>
+                <Btn variant="ghost" onClick={abandonPending}>Abandonner et recommencer</Btn>
+              </div>
               <p className="muted2" style={{ fontSize: 12, marginTop: 14, marginBottom: 0 }}>
                 Si le statut ne change pas, contactez-nous avec cette référence : nous
-                retrouverons votre commande.
+                retrouverons votre commande. N&apos;abandonnez que si vous êtes sûr de ne pas
+                avoir validé le paiement sur votre téléphone.
               </p>
             </div>
           ) : (
